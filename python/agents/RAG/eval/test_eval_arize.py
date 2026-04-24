@@ -16,9 +16,8 @@ import pandas as pd
 import vertexai
 
 # Arize imports
-from arize.experimental.datasets import ArizeDatasetsClient
-from arize.experimental.datasets.experiments.types import EvaluationResult
-from arize.experimental.datasets.utils.constants import GENERATIVE
+from arize.client import ArizeClient
+from arize.experiments.types import EvaluationResult
 from dotenv import load_dotenv
 
 # ADK imports for running the agent
@@ -45,7 +44,7 @@ if not all([ARIZE_API_KEY, ARIZE_SPACE_ID, GOOGLE_CLOUD_PROJECT]):
 vertexai.init(project=GOOGLE_CLOUD_PROJECT, location="us-central1")
 
 # Initialize Arize client (developer_key is deprecated, only api_key needed)
-arize_client = ArizeDatasetsClient(api_key=ARIZE_API_KEY)
+arize_client = ArizeClient(api_key=ARIZE_API_KEY)
 
 
 def load_test_data() -> list[dict]:
@@ -85,16 +84,15 @@ def create_arize_dataset():
     dataset_name = f"rag_agent_evaluation_dataset-{uuid.uuid4()}"
 
     print(f"Creating dataset: {dataset_name}")
-    dataset_id = arize_client.create_dataset(
-        space_id=ARIZE_SPACE_ID,
-        dataset_name=dataset_name,
-        data=df,
-        dataset_type=GENERATIVE,
+    dataset = arize_client.datasets.create(
+        name=dataset_name,
+        space=ARIZE_SPACE_ID,
+        examples=df,
     )
 
-    print(f"Dataset created with ID: {dataset_id}")
+    print(f"Dataset created with ID: {dataset.id}")
     time.sleep(5)  # Wait after dataset creation
-    return {"id": dataset_id}
+    return {"id": dataset.id}
 
 
 def extract_tool_calls_from_response(
@@ -118,9 +116,15 @@ def extract_tool_calls_from_response(
             "according to",
             "based on",
             "source:",
-            "[citation",
+            "citation",
             "retrieved",
             "documentation",
+            "outfall",
+            "corpus",
+            "report",
+            "permit",
+            "worksheet",
+            "table",
         ]
     ):
         # Infer that the RAG tool was used
@@ -412,12 +416,11 @@ def run_evaluation_experiment():
 
     # Run experiment
     print("Running experiment...")
-    experiment_result = arize_client.run_experiment(
-        space_id=ARIZE_SPACE_ID,
-        dataset_id=dataset["id"],
+    experiment_result = arize_client.experiments.run(
+        name=f"spacex_tpdes_rag_eval_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
+        dataset=dataset["id"],
         task=task_function,
         evaluators=evaluators,
-        experiment_name=f"rag_agent_evaluation_{pd.Timestamp.now().strftime('%Y%m%d_%H%M%S')}",
         concurrency=2,  # Reduce concurrency to be more gentle on APIs
         exit_on_error=False,
         dry_run=False,

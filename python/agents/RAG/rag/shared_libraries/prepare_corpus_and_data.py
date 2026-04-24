@@ -12,159 +12,294 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import tempfile
+"""Prepares the Vertex AI RAG corpus for the SpaceX TPDES testing report.
 
-import requests
+Two-phase workflow
+------------------
+Phase 1 – Extraction (run once):
+    python -m rag.shared_libraries.prepare_corpus_and_data
+
+    Uploads testing-report.pdf to GCS, creates (or reuses) a RAG corpus,
+    imports the PDF with layout-aware parsing so tables and images are
+    captured, then writes RAG_CORPUS to .env.
+
+Phase 2 – Querying:
+    Start the agent normally. It reads RAG_CORPUS from .env and uses the
+    VertexAiRagRetrieval tool to answer questions in near-real time.
+"""
+
+import os
+import time
+
+import requests as http_requests
 import vertexai
 from dotenv import load_dotenv, set_key
 from google.api_core.exceptions import ResourceExhausted
 from google.auth import default
+from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.cloud import storage
 from vertexai.preview import rag
 
-# --- Please fill in your configurations ---
-# Load environment variables from .env file
-# Try finding .env in the current working directory first (e.g. scaffolded project)
-cwd_env = os.path.join(os.getcwd(), ".env")
-if os.path.exists(cwd_env):
-    ENV_FILE_PATH = cwd_env
-else:
-    ENV_FILE_PATH = os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", ".env")
-    )
-load_dotenv(ENV_FILE_PATH)
+# ---------------------------------------------------------------------------
+# Configuration — edit these constants to point at a different document
+# ---------------------------------------------------------------------------
 
-# Retrieve the PROJECT_ID from the environmental variables.
+# Path to the PDF, relative to the project root (where you run uv run …)
+LOCAL_PDF_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "testing-report.pdf"
+)
+
+# Display name used to find or create the RAG corpus (idempotent)
+CORPUS_DISPLAY_NAME = "SpaceX_TPDES_Testing_Report_corpus"
+CORPUS_DESCRIPTION = (
+    "SpaceX TPDES permit application and environmental testing report "
+    "for the Starbase Launch Pad Site, Brownsville TX (Permit WQ0005462000). "
+    "Bilingual (English / Spanish). Includes pollutant tables, facility maps, "
+    "water-balance diagrams, and SPL lab chain-of-custody records."
+)
+
+# GCS blob name for the uploaded PDF
+GCS_BLOB_NAME = "testing-report.pdf"
+
+# ---------------------------------------------------------------------------
+# Bootstrap — load .env and resolve project / location
+# ---------------------------------------------------------------------------
+
+cwd_env = os.path.join(os.getcwd(), ".env")
+ENV_FILE_PATH = cwd_env if os.path.exists(cwd_env) else os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", ".env")
+)
+# override=True ensures values from .env win over anything agent.py may have
+# already written to os.environ (e.g. GOOGLE_CLOUD_LOCATION = "global").
+load_dotenv(ENV_FILE_PATH, override=True)
+
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT")
 if not PROJECT_ID:
     raise ValueError(
-        "GOOGLE_CLOUD_PROJECT environment variable not set. Please set it in your .env file."
+        "GOOGLE_CLOUD_PROJECT is not set. Add it to your .env file."
     )
+
 LOCATION = os.getenv("GOOGLE_CLOUD_LOCATION")
 if not LOCATION:
     raise ValueError(
-        "GOOGLE_CLOUD_LOCATION environment variable not set. Please set it in your .env file."
+        "GOOGLE_CLOUD_LOCATION is not set. Add it to your .env file."
     )
-CORPUS_DISPLAY_NAME = "Alphabet_10K_2025_corpus"
-CORPUS_DESCRIPTION = "Corpus containing Alphabet's 10-K 2025 document"
-PDF_URL = "https://s206.q4cdn.com/479360582/files/doc_financials/2025/q4/GOOG-10-K-2025.pdf"
-PDF_FILENAME = "goog-10-k-2025.pdf"
+
+# Derive the GCS bucket from STAGING_BUCKET (strip gs:// prefix)
+_staging_raw = os.getenv("STAGING_BUCKET", "")
+GCS_BUCKET_NAME = _staging_raw.removeprefix("gs://").rstrip("/")
+if not GCS_BUCKET_NAME:
+    raise ValueError(
+        "STAGING_BUCKET is not set. Add it to your .env file (e.g. gs://my-bucket)."
+    )
 
 
-# --- Start of the script ---
-def initialize_vertex_ai():
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+def initialize_vertex_ai() -> None:
     credentials, _ = default()
-    vertexai.init(
-        project=PROJECT_ID, location=LOCATION, credentials=credentials
-    )
+    vertexai.init(project=PROJECT_ID, location=LOCATION, credentials=credentials)
 
 
-def create_or_get_corpus():
-    """Creates a new corpus or retrieves an existing one."""
+def upload_pdf_to_gcs(local_path: str, bucket_name: str, blob_name: str) -> str:
+    """Uploads a local file to GCS and returns the gs:// URI."""
+    abs_path = os.path.abspath(local_path)
+    if not os.path.exists(abs_path):
+        raise FileNotFoundError(
+            f"PDF not found at {abs_path}. "
+            "Make sure testing-report.pdf is in the rag/ directory."
+        )
+
+    client = storage.Client(project=PROJECT_ID)
+    bucket = client.bucket(bucket_name)
+
+    # Create the bucket if it doesn't exist yet
+    if not bucket.exists():
+        print(f"Bucket gs://{bucket_name} not found — creating it...")
+        bucket.create(location=LOCATION)
+        print(f"Bucket gs://{bucket_name} created.")
+
+    blob = bucket.blob(blob_name)
+    size_mb = os.path.getsize(abs_path) / 1_048_576
+    print(f"Uploading {abs_path} ({size_mb:.1f} MB) → gs://{bucket_name}/{blob_name} ...")
+    blob.upload_from_filename(abs_path, timeout=600)
+    uri = f"gs://{bucket_name}/{blob_name}"
+    print(f"Upload complete: {uri}")
+    return uri
+
+
+def create_or_get_corpus() -> rag.RagCorpus:
+    """Returns an existing corpus with CORPUS_DISPLAY_NAME or creates one."""
     embedding_model_config = rag.EmbeddingModelConfig(
         publisher_model="publishers/google/models/text-embedding-004"
     )
-    existing_corpora = rag.list_corpora()
-    corpus = None
-    for existing_corpus in existing_corpora:
-        if existing_corpus.display_name == CORPUS_DISPLAY_NAME:
-            corpus = existing_corpus
-            print(
-                f"Found existing corpus with display name '{CORPUS_DISPLAY_NAME}'"
-            )
-            break
-    if corpus is None:
-        corpus = rag.create_corpus(
-            display_name=CORPUS_DISPLAY_NAME,
-            description=CORPUS_DESCRIPTION,
-            embedding_model_config=embedding_model_config,
-        )
-        print(f"Created new corpus with display name '{CORPUS_DISPLAY_NAME}'")
+    for existing in rag.list_corpora():
+        if existing.display_name == CORPUS_DISPLAY_NAME:
+            print(f"Found existing corpus: '{CORPUS_DISPLAY_NAME}'")
+            return existing
+
+    corpus = rag.create_corpus(
+        display_name=CORPUS_DISPLAY_NAME,
+        description=CORPUS_DESCRIPTION,
+        embedding_model_config=embedding_model_config,
+    )
+    print(f"Created corpus: '{CORPUS_DISPLAY_NAME}'")
     return corpus
 
 
-def download_pdf_from_url(url, output_path):
-    """Downloads a PDF file from the specified URL."""
-    print(f"Downloading PDF from {url}...")
-    response = requests.get(url, stream=True)
-    response.raise_for_status()  # Raise an exception for HTTP errors
+def import_pdf_to_corpus(
+    corpus_name: str, gcs_uri: str, display_name: str, timeout: int = 900
+) -> dict | None:
+    """Imports a PDF from GCS into the corpus via REST with layout parsing.
 
-    with open(output_path, "wb") as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            f.write(chunk)
+    Layout parsing enables Vertex AI RAG to extract tables, images, and
+    document structure — important for pollutant tables and facility maps.
+    Falls back to standard parsing if layout parsing is unavailable.
 
-    print(f"PDF downloaded successfully to {output_path}")
-    return output_path
+    Uses the REST API directly because the Python SDK's rag.import_files()
+    can return INTERNAL errors on some project configurations.
+    """
+    print(f"Importing '{display_name}' from {gcs_uri} with layout parsing ...")
 
+    credentials, _ = default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+    credentials.refresh(GoogleAuthRequest())
+    headers = {
+        "Authorization": f"Bearer {credentials.token}",
+        "Content-Type": "application/json",
+    }
 
-def upload_pdf_to_corpus(corpus_name, pdf_path, display_name, description):
-    """Uploads a PDF file to the specified corpus."""
-    print(f"Uploading {display_name} to corpus...")
+    parts = corpus_name.split("/")
+    location = parts[3] if len(parts) >= 4 else LOCATION
+    base_url = f"https://{location}-aiplatform.googleapis.com/v1beta1"
+    import_url = f"{base_url}/{corpus_name}/ragFiles:import"
+
+    # Request layout-aware parsing: extracts table structure, figures, and
+    # text flow rather than treating the PDF as a flat stream of characters.
+    payload = {
+        "import_rag_files_config": {
+            "gcs_source": {"uris": [gcs_uri]},
+            "rag_file_parsing_config": {
+                "layout_parser": {}
+            },
+        }
+    }
+
     try:
-        rag_file = rag.upload_file(
-            corpus_name=corpus_name,
-            path=pdf_path,
-            display_name=display_name,
-            description=description,
+        resp = http_requests.post(
+            import_url, json=payload, headers=headers, timeout=30
         )
-        print(f"Successfully uploaded {display_name} to corpus")
-        return rag_file
-    except ResourceExhausted as e:
-        print(f"Error uploading file {display_name}: {e}")
-        print(
-            "\nThis error suggests that you have exceeded the API quota for the embedding model."
-        )
-        print("This is common for new Google Cloud projects.")
-        print(
-            "Please see the 'Troubleshooting' section in the README.md for instructions on how to request a quota increase."
-        )
-        return None
-    except Exception as e:
-        print(f"Error uploading file {display_name}: {e}")
+        resp.raise_for_status()
+    except http_requests.HTTPError as e:
+        # layout_parser may not be enabled for this project/region — retry
+        # without it so the import still succeeds.
+        if resp.status_code in (400, 404):
+            print(
+                "  layout_parser not available for this project/region; "
+                "retrying with standard parsing ..."
+            )
+            payload["import_rag_files_config"].pop("rag_file_parsing_config", None)
+            resp = http_requests.post(
+                import_url, json=payload, headers=headers, timeout=30
+            )
+            resp.raise_for_status()
+        else:
+            raise
+
+    op_data = resp.json()
+    op_name = op_data.get("name")
+    if not op_name:
+        print(f"Error: no operation name in response: {op_data}")
         return None
 
+    print(f"Import operation started: {op_name}")
+    print(f"Polling for completion (up to {timeout}s) ...")
 
-def update_env_file(corpus_name, env_file_path):
-    """Updates the .env file with the corpus name."""
+    op_url = f"{base_url}/{op_name}"
+    deadline = time.time() + timeout
+    poll_interval = 10.0
+
+    while time.time() < deadline:
+        time.sleep(poll_interval)
+        try:
+            op_resp = http_requests.get(op_url, headers=headers, timeout=30)
+            op_resp.raise_for_status()
+        except Exception as e:
+            print(f"  Poll request failed ({e}); retrying ...")
+            continue
+
+        op_status = op_resp.json()
+        if op_status.get("done"):
+            if "error" in op_status:
+                err = op_status["error"]
+                print(
+                    f"Import error: code={err.get('code')} "
+                    f"message={err.get('message')}"
+                )
+                return None
+            count = (
+                op_status.get("response", {}).get("importedRagFilesCount", "?")
+            )
+            print(f"Import complete. Files ingested: {count}")
+            return op_status
+
+        update_time = (
+            op_status.get("metadata", {})
+            .get("genericMetadata", {})
+            .get("updateTime", "queued")
+        )
+        print(f"  Still processing ... (last updated: {update_time})")
+        poll_interval = min(poll_interval * 1.5, 60)
+
+    print(f"Timed out after {timeout}s. Operation: {op_name}")
+    return None
+
+
+def update_env_file(corpus_name: str, env_file_path: str) -> None:
     try:
         set_key(env_file_path, "RAG_CORPUS", corpus_name)
-        print(f"Updated RAG_CORPUS in {env_file_path} to {corpus_name}")
+        print(f"RAG_CORPUS written to {env_file_path}")
     except Exception as e:
-        print(f"Error updating .env file: {e}")
+        print(f"Warning: could not update .env: {e}")
 
 
-def list_corpus_files(corpus_name):
-    """Lists files in the specified corpus."""
+def list_corpus_files(corpus_name: str) -> None:
     files = list(rag.list_files(corpus_name=corpus_name))
-    print(f"Total files in corpus: {len(files)}")
-    for file in files:
-        print(f"File: {file.display_name} - {file.name}")
+    print(f"Files in corpus ({len(files)} total):")
+    for f in files:
+        print(f"  • {f.display_name} — {f.name}")
 
 
-def main():
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+
+def main() -> None:
     initialize_vertex_ai()
+
+    # Phase 1a: upload PDF to GCS
+    gcs_uri = upload_pdf_to_gcs(LOCAL_PDF_PATH, GCS_BUCKET_NAME, GCS_BLOB_NAME)
+
+    # Phase 1b: create or reuse corpus
     corpus = create_or_get_corpus()
 
-    # Update the .env file with the corpus name
+    # Persist corpus name before import so a re-run skips re-creation
     update_env_file(corpus.name, ENV_FILE_PATH)
 
-    # Create a temporary directory to store the downloaded PDF
-    with tempfile.TemporaryDirectory() as temp_dir:
-        pdf_path = os.path.join(temp_dir, PDF_FILENAME)
+    # Phase 1c: import with layout parsing (handles tables + images)
+    import_pdf_to_corpus(
+        corpus_name=corpus.name,
+        gcs_uri=gcs_uri,
+        display_name=GCS_BLOB_NAME,
+    )
 
-        # Download the PDF from the URL
-        download_pdf_from_url(PDF_URL, pdf_path)
-
-        # Upload the PDF to the corpus
-        upload_pdf_to_corpus(
-            corpus_name=corpus.name,
-            pdf_path=pdf_path,
-            display_name=PDF_FILENAME,
-            description="Alphabet's 10-K 2025 document",
-        )
-
-    # List all files in the corpus
-    list_corpus_files(corpus_name=corpus.name)
+    list_corpus_files(corpus.name)
+    print("\nSetup complete. Start the agent with: uv run adk web")
 
 
 if __name__ == "__main__":

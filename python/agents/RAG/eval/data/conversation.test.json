@@ -1,252 +1,108 @@
 [
   {
-    "query": "Hi there, I have some questions about the Alphabet 10-K report.",
+    "query": "Hi there, I have questions about this environmental testing report.",
     "expected_tool_use": [],
-    "reference": "Hello! I can help with that. What would you like to know based on the Alphabet 10-K for the fiscal year ended December 31, 2024?"
+    "reference": "Hello! I can help with that. I have access to the SpaceX TPDES permit application and environmental testing report for the Starbase Launch Pad Site in Brownsville, Texas (Proposed Permit No. WQ0005462000). What would you like to know?"
   },
   {
-    "query": "According to the MD&A, how might the increasing proportion of revenues derived from non-advertising sources like Google Cloud and devices potentially impact Alphabet's overall operating margin, and why?",
+    "query": "Provide a high-level summary of the document.",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "How does the growth of non-advertising revenue affect Alphabet's margins?"
+          "query": "summary of the SpaceX TPDES permit application Starbase Launch Pad Site"
         }
       }
     ],
-    "reference": "The report states that revenues from cloud, consumer subscriptions, platforms, and devices are increasing. It notes that the margins on these revenues vary significantly and are generally lower than advertising margins. Specifically, device sales adversely affect consolidated margins due to pricing pressure and higher cost of sales. Therefore, this trend may exert downward pressure on the overall operating margin. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7]"
+    "reference": "This is a Texas Pollutant Discharge Elimination System (TPDES) permit application package (Proposed Permit No. WQ0005462000) submitted by Space Exploration Technologies Corp. (SpaceX) to the Texas Commission on Environmental Quality (TCEQ) on July 1, 2024. SpaceX operates the Starbase Launch Pad Site (RN111606745) at 1 Rocket Road, Brownsville, Cameron County, Texas 78521 — a site for Starship/Super Heavy rocket launch activity. The application seeks authorization to discharge non-process deluge system water used during launch operations via Outfalls 001 and 002 to tidal wetlands, thence to Rio Grande Tidal. The document is bilingual (English and Spanish) and includes administrative reports, technical worksheets, facility maps, a water-balance flow diagram, pollutant analysis from grab samples collected May 29 – June 6, 2024, and SPL Inc. laboratory reports with chain-of-custody records. [Citation: Administrative Package Cover Page; Technical Report 1.0, Item 1]"
   },
   {
-    "query": "The report mentions significant investments in AI. What specific connection is drawn between these AI investments and the company's expectations regarding future capital expenditures?",
+    "query": "What does the report say about mercury levels?",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "Relationship between Alphabet's AI strategy and capital expenditure forecasts"
+          "query": "mercury levels concentration Outfall 001 sampling results"
         }
       }
     ],
-    "reference": "The report explicitly states an expectation that capital expenditures will increase, including expected spend and increased technical infrastructure investment, *in particular* to support AI products and services. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7 & Note About Forward-Looking Statements]"
+    "reference": "Table 2 for Outfall 001 (grab samples, May–June 2024) reports total mercury concentrations of 113 µg/L in Sample 1 and 0.139 µg/L in Sample 2. The Maximum Analytical Level (MAL) for total mercury is 0.005 / 0.0005 µg/L. Sample 1 therefore substantially exceeds the MAL. The stormwater Table 17 for Outfall 001 also lists a mercury grab-sample maximum of <0.113 mg/L against a MAL of 0.000005 mg/L. [Citation: Worksheet 2.0, Table 2 for Outfall No. 001; Table 17 for Outfall No. 001]"
   },
   {
-    "query": "Beyond basic functionality issues, what specific legal, ethical, or societal challenges does Alphabet identify in its Risk Factors as potentially arising from the development and use of AI?",
+    "query": "List the Table 1 values for all pollutants at Outfall 001.",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "What ethical and legal risks does Alphabet associate with artificial intelligence?"
+          "query": "Table 1 pollutant values Outfall 001 grab samples mg/L"
         }
       }
     ],
-    "reference": "The risks mentioned include harmful content, inaccuracies, discrimination, intellectual property infringement/misappropriation, violation of rights of publicity, defamation, data privacy, cybersecurity issues, and unintended consequences or uses potentially affecting human rights, privacy, employment, or other social concerns. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 1A]"
+    "reference": "Table 1 for Outfall No. 001 (grab samples, collected May 29 – June 6, 2024):\n\n| Pollutant | Sample 1 | Sample 2 | Unit |\n|---|---|---|---|\n| BOD (5-day) | 8.49 | 3.56 | mg/L |\n| CBOD (5-day) | 2.08 | <2.00 | mg/L |\n| Chemical oxygen demand | <20.0 | <20.0 | mg/L |\n| Total organic carbon | 3.53 | 3.61 | mg/L |\n| Dissolved oxygen | NA | 7.1 | mg/L |\n| Ammonia nitrogen | 0.121 | 0.211 | mg/L |\n| Total suspended solids | 7.50 | 7.10 | mg/L |\n| Nitrate nitrogen | 1.20 | 1.20 | mg/L |\n| Total organic nitrogen | <0.050 | 0.161 | mg/L |\n| Total phosphorus | 0.0241 | 0.017 | mg/L |\n| Oil and grease | 3.60 | <4.60 | mg/L |\n| Total residual chlorine | 0.20 | Negative | mg/L |\n| Total dissolved solids | 950 | 800 | mg/L |\n| Sulfate | 282 | 281 | mg/L |\n| Chloride | 182 | 197 | mg/L |\n| Fluoride | 0.970 | 1.24 | mg/L |\n| Total alkalinity (as CaCO3) | 136 | 106 | mg/L |\n| Temperature | 28.1 | 38 | °F |\n| pH | 6.97 | 8.6 | standard units |\n\n[Citation: Worksheet 2.0, Table 1 for Outfall No. 001, Technical Report 1.0 p. 21]"
   },
   {
-    "query": "The report details several ongoing antitrust investigations and lawsuits. Synthesizing the information provided, what common themes or business areas appear to be the primary focus of regulatory scrutiny?",
+    "query": "Describe the water cycle—from source to Outfall 001—as detailed in the PDF.",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "What areas of Alphabet's business face the most antitrust scrutiny?"
+          "query": "water balance flow diagram source water deluge launch mount outfall retention pond"
         }
       }
     ],
-    "reference": "Common themes of regulatory scrutiny focus on Search and Search advertising distribution/practices, Advertising Technology (ad tech stack), the Android operating system distribution agreements, and Google Play store operations (billing, fees, business model). [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 1A & Note 10]"
+    "reference": "According to the water-balance flow diagram (Attachment J) and Technical Report 1.0: Source water (potable, raw, or Type 1 reclaimed water) is drawn and fills water storage tanks located at the launch pad. The water moves via piping to the deluge system at the Launch Mount. During launch operations, the deluge is activated and the water contacts the Launch Mount. The majority of this water is captured in Retention Basins 1 and 2, along with stormwater. Captured water is reused and recycled back into the tanks for future deluge operations. Minor amounts of deluge water that are not captured by the containment area discharge intermittently and at variable flow via Outfall 001 directly to tidal wetlands, and thence to Rio Grande Tidal. Sedimentation controls are applied to prepare water for reuse. [Citation: Attachment J — Water Balance; Technical Report 1.0, Items 1b and 2a]"
   },
   {
-    "query": "How does Alphabet account for its investments in non-marketable equity securities, and what specific events trigger adjustments to their carrying value according to Note 1?",
+    "query": "Which outfall sampling point is closest to the Vertical Integration Tower?",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "Alphabet accounting policy for non-marketable equity securities"
+          "query": "Vertical Integration Tower outfall sampling point location site map facility map"
         }
       }
     ],
-    "reference": "They are primarily accounted for under the measurement alternative (cost, less impairment, +/- adjustments). Adjustments to carrying value are triggered by observable price changes in orderly transactions for identical or similar investments of the same issuer, or upon impairment identification. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Note 1 & Note 3]"
+    "reference": "According to the Site Map (Attachment H), the Vertical Integration Tower (VIT) is located on the northeastern portion of the SpaceX property, near Starship Test Stand B. Outfall/Sampling Point 2 (Outfall 002), associated with Retention Basin 2, is positioned on the eastern side of the facility — closer to the VIT than Outfall/Sampling Point 1 (Outfall 001), which is associated with Retention Basin 1 further to the west. Note that the site maps are image-based; exact distances cannot be extracted from the document text. [Citation: Attachment H — Facility Map and Site Map]"
   },
   {
-    "query": "While Google Cloud's operating income turned positive and grew significantly in 2024, what factors mentioned in the MD&A partially offset the revenue growth and moderated the profitability increase?",
+    "query": "Which SpaceX employees listed in the document appear in the chain-of-custody records?",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "Factors limiting Google Cloud profitability growth in 2024"
+          "query": "SpaceX employees chain of custody records sample submitter personnel"
         }
       }
     ],
-    "reference": "The increase in operating income was partially offset by increases in usage costs for technical infrastructure as well as increases in employee compensation expenses, largely driven by headcount growth. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7, Segment Profitability]"
+    "reference": "The chain-of-custody (CoC) records within the SPL Inc. laboratory reports (Project Nos. 1105141 and 1106094) list Rodolfo Longoria of Space Exploration Technologies (SpaceX), 1 Rocket Rd., Brownsville, TX 78521, as the sample project contact who submitted the water samples to SPL Kilgore. The permit application itself lists Carolyn Wood (Sr. Environmental Regulatory Engineer) and Katy Groom (Manager, Environmental Regulatory Affairs) as the SpaceX contacts for technical and administrative matters respectively; however, these individuals do not appear directly in the CoC forms — only Rodolfo Longoria does. [Citation: SPL Kilgore Project 1105141, CoC Print Group 001 of 001; SPL Kilgore Project 1106094, Table of Contents]"
   },
   {
-    "query": "Explain the primary reasons for the significant increase in Alphabet's 'Other income (expense), net' from $1.4 billion in 2023 to $7.4 billion in 2024.",
+    "query": "¿Qué contaminantes se esperan en las descargas de la instalación según el resumen en lenguaje sencillo?",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "Drivers of the change in Alphabet's Other Income (Expense), net in 2024"
+          "query": "contaminantes esperados descargas instalación resumen lenguaje sencillo español"
         }
       }
     ],
-    "reference": "The increase was primarily due to an increase in net gains on equity securities (mainly unrealized gains on non-marketable equity securities driven by fair value adjustments) and a decrease in net losses on foreign currency exchange compared to the prior year. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7, Other Income (Expense), Net & Note 7]"
+    "reference": "Según el Resumen en Lenguaje Sencillo (Plantilla en Español), se espera que las descargas de la instalación Starbase Launch Pad Site contengan: sólidos disueltos totales, nitrógeno-nitrato, fósforo, sulfato, cloruro, fluoruro, aluminio, cadmio, cromo, cobre, zinc y cianuro. Las aguas residuales industriales serán tratadas mediante reutilización del agua de diluvio y pretratamiento según sea necesario. [Cita: TCEQ-20972 — Plantilla en Español, Resumen en Lenguaje Sencillo, Páginas 1–2]"
   },
   {
-    "query": "What key factors contributed to the increase in Alphabet's effective tax rate from 13.9% in 2023 to 16.4% in 2024?",
+    "query": "What laboratory performed the analytical testing and what accreditations does it hold?",
     "expected_tool_use": [
       {
         "tool_name": "retrieve_rag_documentation",
         "tool_input": {
-          "query": "Why did Alphabet's effective tax rate increase in 2024?"
+          "query": "laboratory SPL accreditation NELAC analytical testing water samples"
         }
       }
     ],
-    "reference": "The increase was primarily due to a 2023 one-time adjustment for IRS tax rule changes related to foreign tax credits and R&D capitalization (which lowered the 2023 rate), plus a decrease in the 2024 U.S. federal Foreign Derived Intangible Income deduction. This was partially offset by higher stock-based compensation tax benefits in 2024. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7, Provision for Income Taxes & Note 14]"
+    "reference": "The analytical testing was performed by SPL, Inc. — Kilgore laboratory, located at 2600 Dudley Rd., Kilgore, Texas 75662 (with a regional office at 2401 Village Dr., Suite C, Brownsville, TX 78521). Unless otherwise noted, SPL Kilgore holds International, Federal, and state accreditations. Results covered by the lab's NELAC (National Environmental Laboratory Accreditation Conference) scope are marked (N)ELAC in the reports; parameters outside that scope are marked with 'z'. [Citation: SPL Kilgore Project Reports 1105141 and 1106094 — Qualifier and accreditation footnotes]"
   },
   {
-    "query": "Regarding the DOJ antitrust lawsuit focused on Search, what was the court's ruling in August 2024, and what are the subsequent steps outlined in the report?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Status and ruling in the DOJ Search antitrust case against Google"
-        }
-      }
-    ],
-    "reference": "The U.S. District Court for the District of Columbia ruled that Google violated antitrust laws related to Search and Search advertising. A separate proceeding is being held to determine remedies. Alphabet intends to appeal after the remedy decision. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 1A & Note 10]"
-  },
-  {
-    "query": "What potential challenges does Alphabet acknowledge regarding achieving its ambitious 2030 sustainability goals (net-zero and 24/7 CFE)?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "What uncertainties or difficulties does Alphabet foresee in meeting its climate goals?"
-        }
-      }
-    ],
-    "reference": "Challenges include the path not being easy or linear, long lead times for large-scale infrastructure, significant uncertainty (e.g., future environmental impact of AI), dependency on new technology development (by Alphabet and the energy sector), and the expectation that total GHG emissions might rise before dropping toward the target. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 1]"
-  },
-  {
-    "query": "How might Alphabet's share repurchase program, as mentioned in the risk factors, potentially influence the relative voting control held by its founders, Larry Page and Sergey Brin?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Impact of Alphabet share buybacks on founder voting power"
-        }
-      }
-    ],
-    "reference": "The risk factor on concentration of ownership explicitly states that share repurchases 'may also affect Larry and Sergey’s relative voting power.' By repurchasing lower-vote Class A or non-voting Class C shares, the proportional voting power of their high-vote Class B shares increases relative to other classes. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 1A]"
-  },
-  {
-    "query": "What accounting estimates does Alphabet identify as 'critical' due to the significant level of uncertainty and potential material impact on financial results?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "What are identified as Alphabet's critical accounting estimates?"
-        }
-      }
-    ],
-    "reference": "The critical accounting estimates identified are: Fair Value Measurements of Non-Marketable Equity Securities; Property and Equipment (useful lives assessment); Income Taxes (evaluation of uncertain tax positions); and Loss Contingencies (likelihood and estimation of loss). [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7]"
-  },
-  {
-    "query": "Describe Alphabet's strategy for using derivative financial instruments, including the types of risks hedged and the accounting designations applied.",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Describe Alphabet's derivative hedging strategy and accounting"
-        }
-      }
-    ],
-    "reference": "Alphabet uses derivatives, primarily foreign currency contracts, to manage foreign exchange risk. They designate contracts as Cash Flow Hedges for forecasted revenue, Fair Value Hedges for certain foreign currency marketable securities, and Net Investment Hedges for investments in foreign subsidiaries. Non-designated derivatives are used for other exposures like intercompany transactions and for investment purposes. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Note 3 & Item 7A]"
-  },
-  {
-    "query": "What constitutes the majority of Alphabet's $93.2 billion revenue backlog as of year-end 2024, and what is the anticipated timeframe for recognizing roughly half of this amount?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Details on Alphabet's revenue backlog composition and recognition period"
-        }
-      }
-    ],
-    "reference": "The revenue backlog primarily relates to Google Cloud commitments for future services not yet recognized as revenue. Approximately half of this backlog is expected to be recognized as revenue over the next 24 months. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Note 2]"
-  },
-  {
-    "query": "Analyze the change in Google Services operating income from 2023 to 2024. What were the primary positive drivers, and what costs partially offset the increase?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Analysis of Google Services operating income change in 2024"
-        }
-      }
-    ],
-    "reference": "Google Services operating income increased by $25.4 billion. This was primarily driven by an increase in revenues. Factors partially offsetting this included increases in content acquisition costs and Traffic Acquisition Costs (TAC). A reduction in employee compensation expenses also contributed positively to the income increase. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7, Segment Profitability]"
-  },
-  {
-    "query": "The report mentions 'Alphabet-level activities' in its segment reporting. What types of costs are typically included in this category and not allocated to the main segments?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "What costs are included in Alphabet-level activities?"
-        }
-      }
-    ],
-    "reference": "Costs included in Alphabet-level activities primarily consist of certain AI-focused shared R&D (like general AI model development), corporate initiatives (e.g., philanthropy), corporate shared costs (some finance, HR, legal functions, certain fines/settlements), charges related to employee severance and office space optimization (during 2023/2024), and hedging gains/losses related to revenue. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Note 15 & Item 7]"
-  },
-  {
-    "query": "Contrast the year-over-year percentage change in 'Paid clicks' versus 'Cost-per-click' for Google Search & other in 2024. What does this suggest about monetization trends in that area?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Comparison of paid click and cost-per-click growth for Google Search in 2024"
-        }
-      }
-    ],
-    "reference": "For Google Search & other in 2024 vs 2023, Paid clicks increased by 5%, while Cost-per-click increased by 7%. This suggests that the average revenue generated per click grew slightly faster than the volume of clicks for these properties during the year. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 7, Monetization Metrics]"
-  },
-  {
-    "query": "What is the purpose of the 'measurement alternative' accounting method used for certain non-marketable equity securities, and how does it differ from marking-to-market based purely on estimated fair value each period?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Explain the 'measurement alternative' accounting for equity securities"
-        }
-      }
-    ],
-    "reference": "The measurement alternative measures these securities at cost less impairment, plus or minus adjustments resulting *only* from observable price changes in orderly transactions for identical or similar investments of the same issuer. This differs from marking-to-market based on estimated fair value each period (like public stocks), as adjustments under the measurement alternative only occur upon specific observable events or impairment, reducing period-to-period volatility unless such events occur. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Note 1 & Note 3]"
-  },
-  {
-    "query": "According to the discussion on competition, what types of companies or services represent competitive threats to Google's general-purpose search engine beyond just other search engines?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "What types of competitors does Google Search face besides other search engines?"
-        }
-      }
-    ],
-    "reference": "Competitive threats mentioned include vertical search engines and e-commerce providers (where users navigate directly), online advertising platforms and networks (including online shopping and streaming services), social networks (used for product/service referrals), and digital assistant providers. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Item 1]"
-  },
-  {
-    "query": "How does Alphabet assess the recoverability of its long-lived assets like property & equipment and operating lease assets, and what happens if an asset is deemed impaired?",
-    "expected_tool_use": [
-      {
-        "tool_name": "retrieve_rag_documentation",
-        "tool_input": {
-          "query": "Alphabet's process for testing long-lived assets for impairment"
-        }
-      }
-    ],
-    "reference": "Alphabet reviews long-lived assets for impairment when events indicate the carrying amount may not be recoverable. Recoverability is assessed by comparing the carrying amount to the *future undiscounted cash flows* the asset or asset group is expected to generate. If the carrying value is not recoverable, an impairment loss is recognized, measured as the amount by which the carrying value exceeds the asset's *fair value*. [Citation: Based on Alphabet 10-K for FYE Dec 31, 2024, Note 1]"
-  },
-  {
-    "query": "That covers my questions for now. Thanks!",
+    "query": "That answers all my questions, thanks!",
     "expected_tool_use": [],
-    "reference": "You're welcome! Glad I could help. Feel free to ask if anything else comes up."
+    "reference": "You're welcome! If you have any more questions about the SpaceX TPDES permit application or the Starbase testing report, feel free to ask."
   }
 ]

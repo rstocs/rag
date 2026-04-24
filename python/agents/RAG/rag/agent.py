@@ -35,6 +35,7 @@ os.environ.setdefault("GOOGLE_CLOUD_PROJECT", project_id)
 os.environ["GOOGLE_CLOUD_LOCATION"] = "global"
 os.environ.setdefault("GOOGLE_GENAI_USE_VERTEXAI", "True")
 
+# observability: hooks up Arize Phoenix tracing
 _ = instrument_adk_with_arize()
 
 # Initialize tools list
@@ -46,7 +47,17 @@ if rag_corpus:
     ask_vertex_retrieval = VertexAiRagRetrieval(
         name="retrieve_rag_documentation",
         description=(
-            "Use this tool to retrieve documentation and reference materials for the question from the RAG corpus,"
+            "Use this tool to retrieve information from the SpaceX TPDES permit "
+            "application and testing report corpus. "
+            "For pollutant concentration questions, query specifically for "
+            "'Worksheet 2.0 Table 1 Table 2 Outfall 001 grab sample concentration' "
+            "to retrieve the primary discharge measurement data. "
+            "For facility layout questions, query for 'site map facility map outfall "
+            "sampling point Vertical Integration Tower'. "
+            "For personnel questions, query for 'chain of custody SpaceX employee "
+            "sample submitter contact'. "
+            "For process questions, query for 'water balance flow diagram deluge "
+            "retention basin outfall'."
         ),
         rag_resources=[
             rag.RagResource(
@@ -56,8 +67,8 @@ if rag_corpus:
                 rag_corpus=rag_corpus
             )
         ],
-        similarity_top_k=10,
-        vector_distance_threshold=0.6,
+        similarity_top_k=25,
+        vector_distance_threshold=0.5,
     )
     tools.append(ask_vertex_retrieval)
 

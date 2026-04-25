@@ -73,9 +73,10 @@ session = asyncio.run(
 agent_engine = agent_engines.get(AGENT_ENGINE_ID)
 
 queries = [
-    "Hi, how are you?",
-    "According to the MD&A, how might the increasing proportion of revenues derived from non-advertising sources like Google Cloud and devices potentially impact Alphabet's overall operating margin, and why?",
-    "The report mentions significant investments in AI. What specific connection is drawn between these AI investments and the company's expectations regarding future capital expenditures?",
+    "Hi, I have some questions about the environmental testing report.",
+    "What does the report say about mercury levels at Outfall 001?",
+    "Which outfall sampling point is closest to the Vertical Integration Tower?",
+    "List the Table 1 values for all pollutants at Outfall 001.",
     "Thanks, I got all the information I need. Goodbye!",
 ]
 

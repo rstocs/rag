@@ -20,6 +20,8 @@ from google.adk.evaluation.agent_evaluator import AgentEvaluator
 
 pytest_plugins = ("pytest_asyncio",)
 
+DATA_DIR = pathlib.Path(__file__).parent / "data"
+
 
 @pytest.fixture(scope="session", autouse=True)
 def load_env():
@@ -27,12 +29,20 @@ def load_env():
 
 
 @pytest.mark.asyncio
-async def test_eval_full_conversation():
-    """Test the agent's basic ability on a few examples."""
+async def test_core_conversation():
+    """Core happy-path cases: summary, pollutant tables, water cycle, maps, CoC."""
     await AgentEvaluator.evaluate(
         agent_module="rag",
-        eval_dataset_file_path_or_dir=str(
-            pathlib.Path(__file__).parent / "data/conversation.test.json"
-        ),
-        num_runs=1,
+        eval_dataset_file_path_or_dir=str(DATA_DIR / "conversation.test.json"),
+        num_runs=5,
+    )
+
+
+@pytest.mark.asyncio
+async def test_edge_cases():
+    """Edge cases: out-of-scope refusal, unit conversion, missing data, language."""
+    await AgentEvaluator.evaluate(
+        agent_module="rag",
+        eval_dataset_file_path_or_dir=str(DATA_DIR / "conversation_edge.test.json"),
+        num_runs=5,
     )

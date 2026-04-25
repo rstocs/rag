@@ -1,0 +1,144 @@
+[
+  {
+    "query": "I have a few specific questions about the permit application.",
+    "expected_tool_use": [],
+    "reference": "Of course! Ask away — I can answer questions about the SpaceX TPDES permit application, pollutant data, facility details, lab reports, and the regulatory process."
+  },
+  {
+    "query": "What is SpaceX's current stock price?",
+    "expected_tool_use": [],
+    "reference": "I can only answer questions about the SpaceX TPDES permit application and environmental testing report for the Starbase Launch Pad Site (Permit WQ0005462000). Stock prices are outside the scope of this document. Is there anything about the permit application I can help you with?"
+  },
+  {
+    "query": "Is this a new permit application or a renewal?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "permit application type new renewal amendment administrative report"
+        }
+      }
+    ],
+    "reference": "This is a new permit application. Item 1.e of the Administrative Report 1.0 confirms the application type is 'New' (checked), with Renewal and Amendment options left unchecked. The application fee paid was $350, consistent with a new minor facility permit not subject to EPA categorical effluent guidelines. [Citation: Administrative Report 1.0, Item 1.e — Application Type]"
+  },
+  {
+    "query": "What is the mercury concentration expressed in mg/L rather than µg/L?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "mercury total concentration Outfall 001 grab sample"
+        }
+      }
+    ],
+    "reference": "Converting from µg/L to mg/L (divide by 1,000): Sample 1 mercury = 113 µg/L = 0.113 mg/L; Sample 2 mercury = 0.139 µg/L = 0.000139 mg/L. The MAL of 0.005 µg/L = 0.000005 mg/L and 0.0005 µg/L = 0.0000005 mg/L. Sample 1 at 0.113 mg/L therefore exceeds the more lenient MAL by approximately 22,600 times. [Citation: Worksheet 2.0 — Table 2 for Outfall No. 001, Technical Report 1.0, p. 21]"
+  },
+  {
+    "query": "Which single pollutant in the grab samples exceeded its MAL by the greatest factor?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "Table 2 pollutant MAL exceedance Outfall 001 grab samples metals"
+        }
+      }
+    ],
+    "reference": "Mercury, total in Sample 1 exceeded its MAL by the greatest factor. At 113 µg/L against a MAL of 0.005 µg/L, the exceedance ratio is approximately 22,600×. For comparison, the next largest exceedances were Zinc in Sample 1 (1420 µg/L vs MAL 5.0 µg/L = 284×) and Barium in Sample 1 (94.3 µg/L vs MAL 3 µg/L = ~31×). [Citation: Worksheet 2.0 — Table 2 for Outfall No. 001, Technical Report 1.0, p. 21]"
+  },
+  {
+    "query": "What does the 'J' flag mean in the SPL laboratory reports? What about 'ND'?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "J flag ND qualifier meaning laboratory report SPL qualifiers"
+        }
+      }
+    ],
+    "reference": "According to the SPL Inc. laboratory report qualifiers: The 'J' flag means the analyte was detected below the quantitation limit — the result is an estimated concentration between the Method Detection Limit (MDL) and the Reporting Limit (RL). 'ND' means Not Detected above the Reporting Limit — the analyte was not measured at or above the RL. The RL is the minimum quantitation level accounting for the Instrument Detection Limit, Method Detection Limit, and Practical Quantitation Limit including any dilutions or concentrations performed. [Citation: SPL Kilgore Project Reports 1105141 and 1106094 — Qualifier footnotes]"
+  },
+  {
+    "query": "Were any volatile organic compounds (VOCs) detected above their reporting limits at Outfall 001?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "Table 3 volatile organic compounds VOC Outfall 001 detected results"
+        }
+      }
+    ],
+    "reference": "No volatile organic compounds were detected above their reporting limits at Outfall 001. Table 3 (Worksheet 2.0) lists all tested VOCs — including benzene, chloroform, toluene, and others — with all results reported as less-than values below 1.00–10.0 µg/L. None exceeded their respective MALs. This is consistent with the facility's use of source water and deluge operations that do not involve VOC-generating processes. [Citation: Worksheet 2.0 — Table 3 for Outfall No. 001, Technical Report 1.0, p. 22–23]"
+  },
+  {
+    "query": "Does the document provide pollutant sample data for Outfall 002 in Table 1 or Table 2?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "Table 1 Table 2 Outfall 002 pollutant sample data"
+        }
+      }
+    ],
+    "reference": "No. Worksheet 2.0 provides Tables 1 and 2 only for Outfall 001. The application does not include separate Table 1 or Table 2 data for Outfall 002. Outfall 002 discharges from the retention pond; the SPL laboratory reports identify the sampled location as 'RETENTION POND' (Project 1105141) and 'WW - Retention Pond' (Project 1106094), which represent the source feeding Outfall 002, but these results appear in the lab reports rather than as a separate Worksheet 2.0 table. [Citation: Worksheet 2.0, Technical Report 1.0; SPL Kilgore Project Reports 1105141 and 1106094]"
+  },
+  {
+    "query": "Has this permit been approved by TCEQ?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "permit approval status TCEQ decision preliminary technical review"
+        }
+      }
+    ],
+    "reference": "The document does not record a final permit approval. The application was submitted by SpaceX on July 1, 2024. On July 2, 2024, TCEQ sent a Deficiency Notification requesting additional information before the application could be declared administratively complete. The application was subsequently declared administratively complete, and the TCEQ Notice of Receipt (NORI) issued July 8, 2024 states the Executive Director would conduct a technical review. After technical review, the Executive Director may prepare a draft permit and a preliminary decision — but neither the draft permit nor the final approval is included in this document. [Citation: TCEQ Notice of Receipt of Application, July 8, 2024; TCEQ Deficiency Notification email, July 2, 2024]"
+  },
+  {
+    "query": "Who should I contact at SpaceX if I have technical or administrative questions about this permit?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "SpaceX contact technical administrative permit application name phone email"
+        }
+      }
+    ],
+    "reference": "The permit application lists two SpaceX contacts: Carolyn Wood (Sr. Environmental Regulatory Engineer) handles technical questions — email carolyn.wood@spacex.com, phone (323) 537-0071, 1 Rocket Rd., Brownsville TX 78521. Katy Groom (Manager, Environmental Regulatory Affairs) handles administrative questions — email katy.groom@spacex.com, phone (321) 730-1469, L6-1581 Roberts Rd., Kennedy Space Center FL 32815. [Citation: Administrative Report 1.0, Items 5 and 6]"
+  },
+  {
+    "query": "What is the fluoride concentration in Sample 2 at Outfall 001, and does it have an associated MAL?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "fluoride concentration Sample 2 Outfall 001 Table 1 MAL"
+        }
+      }
+    ],
+    "reference": "From Table 1 for Outfall No. 001 (Worksheet 2.0), the fluoride concentration in Sample 2 was 1.24 mg/L. Sample 1 measured 0.970 mg/L. Table 1 does not list a Maximum Analytical Level (MAL) for fluoride — MALs appear in Table 2, which covers metals and trace parameters. Fluoride is a conventional parameter reported in Table 1 without a corresponding MAL column. [Citation: Worksheet 2.0 — Table 1 for Outfall No. 001, Technical Report 1.0, p. 20]"
+  },
+  {
+    "query": "¿Cuál es el proceso para que el público comente sobre esta solicitud de permiso?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "comentario público reunión pública proceso solicitud permiso TCEQ"
+        }
+      }
+    ],
+    "reference": "Según el Aviso de Recibo de la Solicitud (NORI en español), el proceso para comentarios públicos es el siguiente: Se publicará y enviará un Aviso de la Solicitud y la Decisión Preliminar a quienes estén en la lista de correo, con la fecha límite para presentar comentarios. Los comentarios públicos deben enviarse electrónicamente en http://www14.tceq.texas.gov/epic/eComment/ o por escrito a la TCEQ, Oficial de la Secretaría, MC-105, P.O. Box 13087, Austin, Texas 78711-3087. Tenga en cuenta que cualquier información personal que proporcione pasará a formar parte del registro público de la agencia. La TCEQ realizará una reunión pública si el Director Ejecutivo determina que existe un grado significativo de interés público o si un legislador local lo solicita. Después del período de comentarios, también existe la oportunidad de solicitar una audiencia administrativa de lo contencioso. [Cita: Aviso de Recibo de la Solicitud — Sección Comentario Público / Reunión Pública (español)]"
+  },
+  {
+    "query": "What are the GPS coordinates of the Starbase facility?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "GPS coordinates latitude longitude facility location Starbase"
+        }
+      }
+    ],
+    "reference": "The facility's GPS coordinates are latitude 25.996944°N and longitude 97.156388°W (decimal degrees), as provided in the TCEQ NORI map link issued July 8, 2024. The facility is located on the south side of the eastern terminus of State Highway 4, near Brownsville, Cameron County, Texas 78521. [Citation: TCEQ Notice of Receipt of Application and Intent to Obtain Water Quality Permit, July 8, 2024]"
+  }
+]

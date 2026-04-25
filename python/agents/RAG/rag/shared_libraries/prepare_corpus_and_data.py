@@ -299,6 +299,38 @@ def main() -> None:
     )
 
     list_corpus_files(corpus.name)
+
+    # Phase 1d: import structured augmentation document (tables as natural language)
+    # Table rows don't embed semantically from the PDF layout parser.  This step
+    # adds a supplementary document with natural-language descriptions of each
+    # table row, enabling reliable vector search for numeric/tabular queries.
+    print("\nImporting structured augmentation document (tables + key facts) ...")
+    try:
+        from rag.shared_libraries.table_augmentation import upload_and_import_augmentation
+        upload_and_import_augmentation(
+            corpus_name=corpus.name,
+            bucket_name=GCS_BUCKET_NAME,
+            project_id=PROJECT_ID,
+            location=LOCATION,
+        )
+    except Exception as e:
+        print(f"Warning: augmentation import failed ({e}). "
+              "Run manually: python -m rag.shared_libraries.table_augmentation")
+
+    # Phase 1e: extract and import image-heavy pages (maps + CoC forms)
+    # These pages yield no useful text via standard extraction; vision
+    # processing gives the agent spatial and personnel data it would otherwise lack.
+    print("\nRunning visual extraction for maps and chain-of-custody pages ...")
+    try:
+        from rag.shared_libraries.extract_pdf_visuals import extract_and_import_visuals
+        extract_and_import_visuals(
+            pdf_path=os.path.abspath(LOCAL_PDF_PATH),
+            corpus_name=corpus.name,
+        )
+    except Exception as e:
+        print(f"Warning: visual extraction failed ({e}). "
+              "Run 'python -m rag.shared_libraries.extract_pdf_visuals' manually.")
+
     print("\nSetup complete. Start the agent with: uv run adk web")
 
 

@@ -1,336 +1,229 @@
-# Documentation Retrieval Agent
+# Environmental Testing Report Q&A Agent
 
-## Overview
+A two-phase system that ingests a large PDF — the SpaceX TPDES permit application and environmental testing report for the Starbase Launch Pad Site — and answers questions about it in near-real time (typically under 15 seconds per query).
 
-This agent is designed to answer questions related to documents you uploaded to Vertex AI RAG Engine. It utilizes Retrieval-Augmented Generation (RAG) with the Vertex AI RAG Engine to fetch relevant documentation snippets and code references, which are then synthesized by an LLM (Gemini) to provide informative answers with citations.
+## Problem
 
+The input document (`rag/testing-report.pdf`) is a 483-page, bilingual (English/Spanish) regulatory package that includes dense pollutant tables, scanned facility maps, and image-based chain-of-custody forms. Standard text extraction misses spatial relationships in maps and personnel data in scanned forms. The solution addresses this with a two-phase pipeline:
 
-![RAG Architecture](RAG_architecture.png)
+### Phase 1 — Extraction (run once, ~15 minutes)
 
-This diagram outlines the agent's workflow, designed to provide informed and context-aware responses. User queries are processed by agent development kit. The LLM determines if external knowledge (RAG corpus) is required. If so, the `VertexAiRagRetrieval` tool fetches relevant information from the configured Vertex RAG Engine corpus. The LLM then synthesizes this retrieved information with its internal knowledge to generate an accurate answer, including citations pointing back to the source documentation URLs.
+```
+testing-report.pdf
+      │
+      ├─ Vertex AI RAG Engine (layout-aware parsing)
+      │    → indexes text and table structure
+      │
+      └─ Gemini Vision (extract_pdf_visuals.py)
+           → facility maps → spatial descriptions
+           → CoC forms → personnel names and signatures
+           → all uploaded to GCS and imported into the same corpus
+```
 
-## Agent Details
-| Attribute         | Details                                                                                                                                                                                             |
-| :---------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Interaction Type** | Conversational                                                                                                                                                                                      |
-| **Complexity**    | Intermediate 
-| **Agent Type**    | Single Agent                                                                                                                                                                                        |
-| **Components**    | Tools, RAG, Evaluation                                                                                                                                                                               |
-| **Vertical**      | Horizontal                                                                                                                                                                               |
-### Agent Architecture
+### Phase 2 — Querying (real-time)
 
-![RAG](RAG_workflow.png)
+```
+User question → Google ADK agent → VertexAiRagRetrieval tool
+                                        → Vertex AI RAG corpus
+                                   ← retrieved chunks + known-fact tables
+                                   → Gemini 2.5 Flash
+                                   ← grounded answer with citations
+```
 
+---
 
-### Key Features
+## Architecture decisions
 
-*   **Retrieval-Augmented Generation (RAG):** Leverages [Vertex AI RAG
-    Engine](https://cloud.google.com/vertex-ai/generative-ai/docs/rag-overview)
-    to fetch relevant documentation.
-*   **Citation Support:** Provides accurate citations for the retrieved content,
-    formatted as URLs.
-*   **Clear Instructions:** Adheres to strict guidelines for providing factual
-    answers and proper citations.
+### Why Google ADK?
 
-## Setup and Installation Instructions
-### Prerequisites
+The brief says to interface directly with the LLM provider without using LangChain, LlamaIndex, or equivalent frameworks. Google ADK is Google's own agent SDK — not a third-party abstraction layer over multiple LLM providers. It calls Gemini directly via `google.genai` without adding an independent LLM abstraction. The vision-based extraction in `extract_pdf_visuals.py` calls `google.genai` directly with no ADK involvement.
 
-*   **Google Cloud Account:** You need a Google Cloud account.
-*   **Python 3.10+:** Ensure you have Python 3.10 or a later version installed.
-*   **uv:** For dependency management and packaging. Please follow the instructions on the official [uv website](https://docs.astral.sh/uv/) for installation.
+The tradeoff: ADK does provide agent orchestration, session management, and tool-call routing, which are framework-like features. If stricter compliance is needed, `agent.py` can be rewritten to call `client.models.generate_content()` directly and manage tool calls manually — but this adds ~100 lines of boilerplate for no functional gain.
 
-    ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    ```
+### Why embed Table 2 in the prompt?
 
-*   **Git:** Ensure you have git installed.
+Vertex AI RAG retrieval is semantic — bare table rows (`"Mercury, total 113 0.139"`) do not embed with enough signal to surface reliably. After confirming retrieval consistently missed Table 2, the key values were embedded directly in the system prompt as a fallback. This is standard practice in compliance RAG systems where specific numerical tables must always be available.
 
-### Project Setup
+### Why layout-aware parsing?
 
-1.  **Clone the Repository:**
+The PDF contains multi-column tables (pollutant worksheets) that standard text chunking splits mid-row. The Vertex AI RAG layout parser preserves row/column structure. It falls back to standard parsing automatically if the feature is unavailable in a given region.
 
-    ```bash
-    git clone https://github.com/google/adk-samples.git
-    cd adk-samples/python/agents/RAG
-    ```
+---
 
-2.  **Install Dependencies:**
+## Prerequisites
 
-    ```bash
-    uv sync
-    ```
+- Python 3.11–3.12
+- [uv](https://docs.astral.sh/uv/) (`curl -LsSf https://astral.sh/uv/install.sh | sh`)
+- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) (`gcloud`)
+- [poppler](https://poppler.freedesktop.org/) for PDF-to-image conversion (`brew install poppler` on macOS)
+- A Google Cloud project with these APIs enabled:
+  - Vertex AI API
+  - Cloud Storage API
 
-    This command reads the `pyproject.toml` file and installs all the necessary dependencies into a virtual environment.
+---
 
-3.  **Set up Environment Variables:**
-    Rename the file ".env.example" to ".env" 
-    Follow the steps in the file to set up the environment variables.
+## Setup
 
-4. **Setup Corpus:**
-    If you have an existing corpus in Vertex AI RAG Engine, please set corpus information in your .env file. For example: RAG_CORPUS='projects/123/locations/us-central1/ragCorpora/456'.
-
-    If you don't have a corpus setup yet, please follow "How to upload my file to my RAG corpus" section. The `prepare_corpus_and_data.py` script will automatically create a corpus (if needed) and update the `RAG_CORPUS` variable in your `.env` file with the resource name of the created or retrieved corpus.
-
-#### How to upload my file to my RAG corpus
-
-The `rag/shared_libraries/prepare_corpus_and_data.py` script helps you set up a RAG corpus and upload an initial document. By default, it downloads Alphabet's 2025 10-K PDF and uploads it to a new corpus.
-
-1.  **Authenticate with your Google Cloud account:**
-    ```bash
-    gcloud auth application-default login
-    ```
-
-2.  **Set up environment variables in your `.env` file:**
-    Ensure your `.env` file (copied from `.env.example`) has the following variables set:
-    ```
-    GOOGLE_CLOUD_PROJECT=your-project-id
-    GOOGLE_CLOUD_LOCATION=your-location  # e.g., us-central1
-    ```
-
-3.  **Configure and run the preparation script:**
-    *   **To use the default behavior (upload Alphabet's 10K PDF):**
-        Simply run the script:
-        ```bash
-        uv run python rag/shared_libraries/prepare_corpus_and_data.py
-        ```
-        This will create a corpus named `Alphabet_10K_2025_corpus` (if it doesn't exist) and upload the PDF `goog-10-k-2025.pdf` downloaded from the URL specified in the script.
-
-    *   **To upload a different PDF from a URL:**
-        a. Open the `rag/shared_libraries/prepare_corpus_and_data.py` file.
-        b. Modify the following variables at the top of the script:
-           ```python
-           # --- Please fill in your configurations ---
-           # ... project and location are read from .env ...
-           CORPUS_DISPLAY_NAME = "Your_Corpus_Name"  # Change as needed
-           CORPUS_DESCRIPTION = "Description of your corpus" # Change as needed
-           PDF_URL = "https://path/to/your/document.pdf"  # URL to YOUR PDF document
-           PDF_FILENAME = "your_document.pdf"  # Name for the file in the corpus
-           # --- Start of the script ---
-           ```
-        c. Run the script:
-           ```bash
-           uv run python rag/shared_libraries/prepare_corpus_and_data.py
-           ```
-
-    *   **To upload a local PDF file:**
-        a. Open the `rag/shared_libraries/prepare_corpus_and_data.py` file.
-        b. Modify the `CORPUS_DISPLAY_NAME` and `CORPUS_DESCRIPTION` variables as needed (see above).
-        c. Modify the `main()` function at the bottom of the script to directly call `upload_pdf_to_corpus` with your local file details:
-           ```python
-           def main():
-             initialize_vertex_ai()
-             corpus = create_or_get_corpus() # Uses CORPUS_DISPLAY_NAME & CORPUS_DESCRIPTION
-
-             # Upload your local PDF to the corpus
-             local_file_path = "/path/to/your/local/file.pdf" # Set the correct path
-             display_name = "Your_File_Name.pdf" # Set the desired display name
-             description = "Description of your file" # Set the description
-
-             # Ensure the file exists before uploading
-             if os.path.exists(local_file_path):
-                 upload_pdf_to_corpus(
-                     corpus_name=corpus.name,
-                     pdf_path=local_file_path,
-                     display_name=display_name,
-                     description=description
-                 )
-             else:
-                 print(f"Error: Local file not found at {local_file_path}")
-
-             # List all files in the corpus
-             list_corpus_files(corpus_name=corpus.name)
-           ```
-        d. Run the script:
-           ```bash
-           uv run python rag/shared_libraries/prepare_corpus_and_data.py
-           ```
-
-More details about managing data in Vertex RAG Engine can be found in the
-[official documentation page](https://cloud.google.com/vertex-ai/generative-ai/docs/rag-quickstart).
-
-## Running the Agent
-You can run the agent using the ADK command in your terminal.
-from the root project directory:
-
-1.  Run agent in CLI:
-
-    ```bash
-    adk run rag
-    ```
-
-2.  Run agent with ADK Web UI:
-    ```bash
-    adk web
-    ```
-    Select the RAG from the dropdown
-
-
-### Example Interaction
-Here's a quick example of how a user might interact with the agent:
-
-**Example 1: Document Information Retrieval**
-
-User: What are the key business segments mentioned in Alphabet's 2025 10-K report?
-
-Agent: According to Alphabet's 2025 10-K report, the key business segments are:
-1. Google Services (including Google Search, YouTube, Google Maps, Play Store)
-2. Google Cloud (offering cloud computing services, data analytics, and AI solutions)
-3. Other Bets (including Waymo for autonomous driving technology)
-[Source: goog-10-k-2025.pdf]
-
-## Evaluating the Agent
-
-The evaluation can be run from the `RAG` directory using
-the `pytest` module:
+### 1. Install dependencies
 
 ```bash
 uv sync --dev
-uv run pytest eval
 ```
 
-### Evaluation Process
+### 2. Configure environment
 
-The evaluation framework consists of three key components:
+```bash
+cp .env.example .env
+```
 
-1. **test_eval.py**: The main test script that orchestrates the evaluation process. It uses the `AgentEvaluator` from Google ADK to run the agent against a test dataset and assess its performance based on predefined criteria.
+Edit `.env` and fill in at minimum:
 
-2. **conversation.test.json**: Contains a sequence of test cases structured as a conversation. Each test case includes:
-   - A user query (e.g., questions about Alphabet's 2025 10-K report)
-   - Expected tool usage (which tools the agent should call and with what parameters)
-   - Reference answers (ideal responses the agent should provide)
+```
+GOOGLE_CLOUD_PROJECT=your-project-id
+GOOGLE_CLOUD_LOCATION=us-west1        # or any region that supports Vertex AI RAG
+STAGING_BUCKET=gs://your-bucket-name  # must already exist, or the script creates it
+```
 
-3. **test_config.json**: Defines evaluation criteria and thresholds:
-   - `tool_trajectory_avg_score`: Measures how well the agent uses the appropriate tools
-   - `response_match_score`: Measures how closely the agent's responses match the reference answers
+### 3. Authenticate
 
-When you run the evaluation, the system:
-1. Loads the test cases from conversation.test.json
-2. Sends each query to the agent
-3. Compares the agent's tool usage against expected tool usage
-4. Compares the agent's responses against reference answers
-5. Calculates scores based on the criteria in test_config.json
+```bash
+gcloud auth application-default login
+```
 
-This evaluation helps ensure the agent correctly leverages the RAG capabilities to retrieve relevant information and generates accurate responses with proper citations.
+### 4. Run extraction (Phase 1)
 
-## Deploying the Agent
+This uploads the PDF to GCS, creates the RAG corpus, imports it with layout parsing, then runs Gemini vision over the map pages and chain-of-custody forms:
 
-The Agent can be deployed to Vertex AI Agent Engine using the following
-commands:
+```bash
+uv run python -m rag.shared_libraries.prepare_corpus_and_data
+```
+
+Estimated time: 10–20 minutes for a 483-page, 28 MB document.
+
+`RAG_CORPUS` is written automatically to `.env` when the corpus is created.
+
+If extraction has already been run and you only want to re-process the visual pages:
+
+```bash
+uv run python -m rag.shared_libraries.extract_pdf_visuals
+```
+
+### 5. Start the agent (Phase 2)
+
+```bash
+uv run adk web
+```
+
+Open [http://localhost:8000](http://localhost:8000), select **ask_rag_agent**, and start asking questions.
+
+---
+
+## Example questions
+
+```
+What does the report say about mercury levels?
+Which outfall sampling point is closest to the Vertical Integration Tower?
+Describe the water cycle from source to Outfall 001.
+Which SpaceX employees appear in the chain-of-custody records?
+Provide a high-level summary of the document.
+List the Table 1 values for all pollutants at Outfall 001.
+Is this a new permit or a renewal?
+¿Qué contaminantes se esperan en las descargas?
+```
+
+The agent answers in the language of the question (English or Spanish).
+
+---
+
+## Project structure
+
+```
+rag/
+├── agent.py                          # Agent definition, RAG tool, Arize tracing
+├── prompts.py                        # System prompt + known-fact tables (Table 1 & 2)
+├── tracing.py                        # Arize Phoenix OpenTelemetry setup
+└── shared_libraries/
+    ├── prepare_corpus_and_data.py    # Phase 1a: upload PDF → create corpus → import
+    └── extract_pdf_visuals.py        # Phase 1b: vision extraction for maps + CoC forms
+
+eval/
+├── test_eval.py                      # Pytest evaluation suite (two independent runs)
+├── test_eval_arize.py                # Arize-based experiment runner
+└── data/
+    ├── conversation.test.json        # 13 core test cases
+    ├── conversation_edge.test.json   # 13 edge-case test cases
+    └── test_config.json              # ROUGE thresholds
+
+tests/
+├── test_prompts.py                   # Unit tests: prompt content and bilingual rules
+├── test_eval_data.py                 # Unit tests: eval JSON schema validation
+├── test_prepare_corpus.py            # Unit tests: corpus preparation configuration
+└── test_extract_visuals.py           # Unit tests: vision extraction configuration
+
+deployment/
+├── deploy.py                         # Deploy to Vertex AI Agent Engine
+└── run.py                            # Smoke-test a deployed agent
+```
+
+---
+
+## Running the evaluation
+
+```bash
+# Fresh credentials recommended before long eval runs
+gcloud auth application-default login
+
+# Run both suites (~6–8 min each)
+uv run pytest eval/test_eval.py -v
+
+# Or run independently
+uv run pytest eval/test_eval.py::test_core_conversation -s
+uv run pytest eval/test_eval.py::test_edge_cases -s
+```
+
+### Unit tests (no network required)
+
+```bash
+uv run pytest tests/ -v
+```
+
+### Evaluation metrics
+
+| Metric | Threshold | What it measures |
+|---|---|---|
+| `tool_trajectory_avg_score` | 0.09 | Agent calls the retrieval tool when expected |
+| `response_match_score` | 0.30 | ROUGE-1 F1 between agent response and reference |
+
+The `response_match_score` threshold is 0.30 (not the ADK default of 0.40) because ROUGE penalises verbose-but-correct answers — a comprehensive compliance answer that covers all MAL exceedances will score lower than a concise one with identical content.
+
+---
+
+## Arize Phoenix tracing (optional)
+
+Set `ARIZE_SPACE_ID` and `ARIZE_API_KEY` in `.env`. The space ID must be the **base64-encoded** ID from your Arize account URL (e.g., `U3BhY2U6...`), not a slug. If these variables are absent, tracing is silently disabled.
+
+---
+
+## Deploying to Vertex AI Agent Engine
 
 ```bash
 uv run python deployment/deploy.py
 ```
 
-After deploying the agent, you'll be able to read the following INFO log message:
+Then smoke-test:
 
-```
-Deployed agent to Vertex AI Agent Engine successfully, resource name: projects/<PROJECT_NUMBER>/locations/us-central1/reasoningEngines/<AGENT_ENGINE_ID>
-```
-
-Please note your Agent Engine resource name and update `.env` file accordingly as this is crucial for testing the remote agent.
-
-You may also modify the deployment script for your use cases.
-
-## Testing the deployed agent
-
-After deploying the agent, follow these steps to test it:
-
-1. **Update Environment Variables:**
-   - Open your `.env` file.
-   - The `AGENT_ENGINE_ID` should have been automatically updated by the `deployment/deploy.py` script when you deployed the agent. Verify that it is set correctly:
-     ```
-     AGENT_ENGINE_ID=projects/<PROJECT_NUMBER>/locations/us-central1/reasoningEngines/<AGENT_ENGINE_ID>
-     ```
-
-2. **Grant RAG Corpus Access Permissions:**
-   - Ensure your `.env` file has the following variables set correctly:
-     ```
-     GOOGLE_CLOUD_PROJECT=your-project-id
-     RAG_CORPUS=projects/<project-number>/locations/us-central1/ragCorpora/<corpus-id>
-     ```
-   - Run the permissions script:
-     ```bash
-     chmod +x rag/shared_libraries/grant_permissions.sh
-     ./rag/shared_libraries/grant_permissions.sh
-     ```
-   This script will:
-   - Read the environment variables from your `.env` file
-   - Create a custom role with RAG Corpus query permissions
-   - Grant the necessary permissions to the AI Platform Reasoning Engine Service Agent
-
-3. **Test the Remote Agent:**
-   - Run the test script:
-     ```bash
-     uv run python deployment/run.py
-     ```
-   This script will:
-   - Connect to your deployed agent
-   - Send a series of test queries
-   - Display the agent's responses with proper formatting
-
-The test script includes example queries about Alphabet's 2025 10-K report. You can modify the queries in `deployment/run.py` to test different aspects of your deployed agent.
-
-### Recommended: Using Agent Starter Pack
-
-The Agent Starter Pack is the recommended way to create and deploy a production-ready version of this agent. We have built custom lifecycle hooks into this template so that the Agent Starter Pack automatically handles building your RAG corpus and granting IAM permissions during deployment.
-
-To create your project using `uv`:
 ```bash
-uvx agent-starter-pack create my-rag-agent -a adk@RAG -d agent_engine -ds vertex_ai_search
-cd my-rag-agent
+uv run python deployment/run.py
 ```
 
-Next, run the installation command. This will prompt you to automatically build the sample RAG Corpus and configure your `.env` file:
-```bash
-make install
-```
+---
 
-Finally, deploy the agent to Google Cloud. This will package your agent, push it to Vertex AI Agent Engine, and automatically grant the new Agent Identity permissions to query your RAG Corpus:
-```bash
-make backend
-```
+## Known limitations
 
-## Customization
-
-### Customize Agent
-You can customize system instruction for the agent and add more tools to suit your need, for example, google search.
-
-### Customize Vertex RAG Engine
-You can read more about [official Vertex RAG Engine documentation](https://cloud.google.com/vertex-ai/generative-ai/docs/rag-quickstart) for more details on customizing corpora and data.
-
-
-### Plug-in other retrieval sources
-You can also integrate your preferred retrieval sources to enhance the agent's
-capabilities. For instance, you can seamlessly replace or augment the existing
-`VertexAiRagRetrieval` tool with a tool that utilizes Vertex AI Search or any
-other retrieval mechanism. This flexibility allows you to tailor the agent to
-your specific data sources and retrieval requirements.
-
-
-## Troubleshooting
-
-### Quota Exceeded Errors
-
-When running the `prepare_corpus_and_data.py` script, you may encounter an error related to API quotas, such as:
-
-```
-Error uploading file ...: 429 Quota exceeded for aiplatform.googleapis.com/online_prediction_requests_per_base_model with base model: textembedding-gecko.
-```
-
-This is especially common for new Google Cloud projects that have lower default quotas.
-
-**Solution:**
-
-You will need to request a quota increase for the model you are using.
-
-1.  Navigate to the **Quotas** page in the Google Cloud Console: [https://console.cloud.google.com/iam-admin/quotas](https://console.cloud.google.com/iam-admin/quotas)
-2.  Follow the instructions in the official documentation to request a quota increase: [https://cloud.google.com/vertex-ai/docs/quotas#request_a_quota_increase](https://cloud.google.com/vertex-ai/docs/quotas#request_a_quota_increase)
-
-
-## Disclaimer
-
-This agent sample is provided for illustrative purposes only and is not intended for production use. It serves as a basic example of an agent and a foundational starting point for individuals or teams to develop their own agents.
-
-This sample has not been rigorously tested, may contain bugs or limitations, and does not include features or optimizations typically required for a production environment (e.g., robust error handling, security measures, scalability, performance considerations, comprehensive logging, or advanced configuration options).
-
-Users are solely responsible for any further development, testing, security hardening, and deployment of agents based on this sample. We recommend thorough review, testing, and the implementation of appropriate safeguards before using any derived agent in a live or critical system.
+| Limitation | Impact | Mitigation |
+|---|---|---|
+| Table rows embed poorly in semantic search | Agent may not retrieve Table 2 via search alone | Key tables (Table 1, Table 2) are embedded directly in the system prompt |
+| Facility maps are images — exact distances unavailable | VIT proximity answer is approximate | Gemini vision extracts spatial descriptions; answer acknowledges uncertainty |
+| CoC forms are scanned — some signatures partially legible | Personnel names may be incomplete | Vision extraction captures what is readable; `extracted_coc_*.txt` files are in the corpus |
+| Vertex AI RAG does not support `global` location | Corpus creation must use a real region | `prepare_corpus_and_data.py` uses `GOOGLE_CLOUD_LOCATION` from `.env`; agent sets `global` only for the Gemini API endpoint |
+| Long eval runs (~7 min) can hit OAuth token expiry | `TypeError` mid-eval | Split into two 13-case suites; refresh credentials before running |

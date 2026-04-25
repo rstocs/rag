@@ -68,7 +68,7 @@ if rag_corpus:
             )
         ],
         similarity_top_k=25,
-        vector_distance_threshold=0.5,
+        vector_distance_threshold=0.3,
     )
     tools.append(ask_vertex_retrieval)
 

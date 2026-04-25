@@ -2,7 +2,7 @@
   {
     "query": "Hi there, I have questions about this environmental testing report.",
     "expected_tool_use": [],
-    "reference": "Hello! I can help with that. I have access to the SpaceX TPDES permit application and environmental testing report for the Starbase Launch Pad Site in Brownsville, Texas (Proposed Permit No. WQ0005462000). What would you like to know?"
+    "reference": "Hello! I can help with questions about the environmental testing report. What would you like to know?"
   },
   {
     "query": "Provide a high-level summary of the document.",
@@ -74,7 +74,7 @@
         }
       }
     ],
-    "reference": "The chain-of-custody (CoC) records within the SPL Inc. laboratory reports (Project Nos. 1105141 and 1106094) list Rodolfo Longoria of Space Exploration Technologies (SpaceX), 1 Rocket Rd., Brownsville, TX 78521, as the sample project contact who submitted the water samples to SPL Kilgore. The permit application itself lists Carolyn Wood (Sr. Environmental Regulatory Engineer) and Katy Groom (Manager, Environmental Regulatory Affairs) as the SpaceX contacts for technical and administrative matters respectively; however, these individuals do not appear directly in the CoC forms — only Rodolfo Longoria does. [Citation: SPL Kilgore Project 1105141, CoC Print Group 001 of 001; SPL Kilgore Project 1106094, Table of Contents]"
+    "reference": "The document identifies the following SpaceX employees in chain-of-custody and application records: Rodolfo Longoria (SpaceX, 1 Rocket Rd., Brownsville TX) is listed as the project contact who submitted samples to SPL Kilgore for both Project 1105141 and 1106094. Zachary Smith (SpaceX) is identified as the sample collector who physically signed the CoC forms (signature: Z. Smith). The permit application also lists Carolyn Wood (Sr. Environmental Regulatory Engineer) and Katy Groom (Manager, Environmental Regulatory Affairs) as technical and administrative contacts, though they do not appear on the CoC forms. [Citation: SPL Kilgore CoC Projects 1105141 and 1106094; Administrative Report 1.0, Items 5–6; extracted_coc_1105141.txt]"
   },
   {
     "query": "¿Qué contaminantes se esperan en las descargas de la instalación según el resumen en lenguaje sencillo?",
@@ -98,11 +98,47 @@
         }
       }
     ],
-    "reference": "The analytical testing was performed by SPL, Inc. — Kilgore laboratory, located at 2600 Dudley Rd., Kilgore, Texas 75662 (with a regional office at 2401 Village Dr., Suite C, Brownsville, TX 78521). Unless otherwise noted, SPL Kilgore holds International, Federal, and state accreditations. Results covered by the lab's NELAC (National Environmental Laboratory Accreditation Conference) scope are marked (N)ELAC in the reports; parameters outside that scope are marked with 'z'. [Citation: SPL Kilgore Project Reports 1105141 and 1106094 — Qualifier and accreditation footnotes]"
+    "reference": "The analytical testing was performed by SPL, Inc. — Kilgore laboratory, located at 2600 Dudley Rd., Kilgore, Texas 75662 (with a regional office at 2401 Village Dr., Suite C, Brownsville, TX 78521). Unless otherwise noted, SPL Kilgore holds International, Federal, and state accreditations. Results covered by the lab's NELAC scope are marked (N)ELAC in the reports; parameters outside that scope are marked with 'z'. [Citation: SPL Kilgore Project Reports 1105141 and 1106094 — Qualifier and accreditation footnotes]"
   },
   {
-    "query": "That answers all my questions, thanks!",
+    "query": "Who signed or appears in the chain-of-custody forms as having relinquished or received the samples?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "chain of custody relinquished received by names signatures SpaceX personnel"
+        }
+      }
+    ],
+    "reference": "The chain-of-custody forms identify SpaceX personnel as the sample relinquishers and SPL Inc. staff as recipients. Rodolfo Longoria of Space Exploration Technologies (SpaceX) is the named project contact for both Project 1105141 and Project 1106094. The vision-extracted CoC pages also identify Zachary Smith of SpaceX as the sampler and collector who physically relinquished the samples, with signature 'Z. Smith' on the forms. [Citation: CoC Print Group 001 of 001 — Projects 1105141 and 1106094, SPL Kilgore; extracted_coc_1105141.txt]"
+  },
+  {
+    "query": "Based on the site map, which outfall sampling point is spatially closest to the Vertical Integration Tower and what other structures are nearby?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "site map Vertical Integration Tower outfall sampling point spatial location structures"
+        }
+      }
+    ],
+    "reference": "According to the Site Map (Attachment H, page 305), the Vertical Integration Tower (VIT) is located on the eastern portion of the SpaceX property. Nearby structures include Starship Test Stand B, the Power and Control Systems Building, OLP Fuel Farm, and Bunker. Outfall/Sampling Point 2 (Outfall 002), associated with Retention Basin 2, is on the eastern side of the facility and is closer to the VIT than Outfall/Sampling Point 1 (Outfall 001), which is associated with Retention Basin 1 on the western side near the primary Deluge System dispersal limit. [Citation: Attachment H — Site Map, testing-report.pdf p. 305; extracted_facility_maps.txt]"
+  },
+  {
+    "query": "What stormwater pollutants were detected at Outfall 001 and how do they compare to their MALs?",
+    "expected_tool_use": [
+      {
+        "tool_name": "retrieve_rag_documentation",
+        "tool_input": {
+          "query": "Table 17 stormwater pollutants Outfall 001 grab sample maximum MAL"
+        }
+      }
+    ],
+    "reference": "Table 17 for Outfall 001 (stormwater sampling, November–December 2023) reports the following grab sample maximums against their MALs: Arsenic total 0.0107 mg/L (MAL 0.0005 mg/L — exceeds); Barium total 0.102 mg/L (MAL 0.003 mg/L — exceeds); Cadmium total 0.00241 mg/L (MAL 0.001 mg/L — exceeds); Chromium total 0.0613 mg/L (MAL 0.003 mg/L — exceeds); Copper total 0.0101 mg/L (MAL 0.002 mg/L — exceeds); Lead total 0.00308 mg/L (MAL 0.0005 mg/L — exceeds); Mercury total <0.113 mg/L (MAL 0.000005 mg/L — exceeds if detected); Nickel total 0.00599 mg/L (MAL 0.002 mg/L — exceeds); Selenium total 0.00298 mg/L (MAL 0.005 mg/L — within limit). [Citation: Worksheet 8.0 — Table 17 for Outfall No. 001, Technical Report 1.0, p. 61]"
+  },
+  {
+    "query": "Thanks, that covers everything for now.",
     "expected_tool_use": [],
-    "reference": "You're welcome! If you have any more questions about the SpaceX TPDES permit application or the Starbase testing report, feel free to ask."
+    "reference": "You're welcome! Feel free to ask if you have more questions about the SpaceX TPDES permit application or the Starbase testing report."
   }
 ]

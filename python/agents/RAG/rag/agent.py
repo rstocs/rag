@@ -96,7 +96,26 @@ def _vertex_rerank(
 
 
 # ---------------------------------------------------------------------------
-# Retrieval tool — vector search → BM25 hybrid re-score → semantic rerank
+# Retrieval helpers
+# ---------------------------------------------------------------------------
+
+def _sync_retrieve(
+    text: str, corpus: str, top_k: int, threshold: float
+) -> list[str]:
+    """Synchronous RAG retrieval — called via asyncio.to_thread for parallelism."""
+    resp = rag.retrieval_query(
+        text=text,
+        rag_resources=[rag.RagResource(rag_corpus=corpus)],
+        rag_retrieval_config=rag.RagRetrievalConfig(
+            top_k=top_k,
+            filter=rag.Filter(vector_distance_threshold=threshold),
+        ),
+    )
+    return [ctx.text for ctx in resp.contexts.contexts if ctx.text]
+
+
+# ---------------------------------------------------------------------------
+# Retrieval tool — parallel query expansion → BM25 hybrid → semantic rerank
 # ---------------------------------------------------------------------------
 
 async def retrieve_rag_documentation(query: str) -> str:
@@ -114,8 +133,11 @@ async def retrieve_rag_documentation(query: str) -> str:
     retention basin outfall'.
 
     Retrieval pipeline:
-      1. Vector search (top-50, threshold 0.5) — wide net for recall
-      2. BM25 hybrid re-score — keyword relevance layered on vector results
+      1. Parallel query expansion — primary query (tight threshold) + domain-
+         augmented query (wider threshold) run simultaneously to maximise recall
+         for broad queries (summary, GPS, permit status) that the primary leg
+         alone may miss
+      2. BM25 hybrid re-score — keyword relevance layered on merged results
       3. Vertex AI semantic reranking — final top-10 by cross-encoder score
     """
     corpus = os.environ.get("RAG_CORPUS", "")
@@ -124,16 +146,27 @@ async def retrieve_rag_documentation(query: str) -> str:
 
     project = os.environ.get("GOOGLE_CLOUD_PROJECT", "")
 
-    # Step 1: Vector retrieval — enough candidates for BM25 + reranker pipeline
-    rag_resp = rag.retrieval_query(
-        text=query,
-        rag_resources=[rag.RagResource(rag_corpus=corpus)],
-        rag_retrieval_config=rag.RagRetrievalConfig(
-            top_k=30,
-            filter=rag.Filter(vector_distance_threshold=0.4),
-        ),
+    # Step 1: Parallel query expansion.
+    # Primary: tight threshold, high precision.
+    # Expanded: augmented query with domain keywords + wider threshold for
+    # recall on queries that return 0 chunks with tight settings (GPS,
+    # document summary, permit renewal status).
+    expanded_query = (
+        query + " SpaceX TPDES Starbase permit application GPS coordinates "
+        "latitude longitude new permit renewal summary overview"
     )
-    chunks = [ctx.text for ctx in rag_resp.contexts.contexts if ctx.text]
+    primary_chunks, expanded_chunks = await asyncio.gather(
+        asyncio.to_thread(_sync_retrieve, query, corpus, 30, 0.4),
+        asyncio.to_thread(_sync_retrieve, expanded_query, corpus, 20, 0.55),
+    )
+
+    # Deduplicate preserving primary-first order
+    seen: set[str] = set()
+    chunks: list[str] = []
+    for chunk in primary_chunks + expanded_chunks:
+        if chunk not in seen:
+            seen.add(chunk)
+            chunks.append(chunk)
 
     if not chunks:
         return "No relevant information found in the corpus for this query."

@@ -65,8 +65,9 @@ def main():
         
         logger.info("--- Evaluation ---")
         eval_result = evaluate_answer(args.question, answer, context)
-        logger.info(f"Faithfulness Score: {eval_result.get('faithfulness_score')} - {eval_result.get('faithfulness_reason')}")
-        logger.info(f"Relevance Score: {eval_result.get('relevance_score')} - {eval_result.get('relevance_reason')}")
+        logger.info(f"Faithfulness Score:       {eval_result.get('faithfulness_score')} - {eval_result.get('faithfulness_reason')}")
+        logger.info(f"Answer Relevance Score:   {eval_result.get('relevance_score')} - {eval_result.get('relevance_reason')}")
+        logger.info(f"Context Relevance Score:  {eval_result.get('context_relevance_score')} - {eval_result.get('context_relevance_reason')}")
         
     else:
         parser.print_help()

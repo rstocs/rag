@@ -3,7 +3,7 @@ import logging
 from PIL import Image
 from google import genai
 from src.retrieval.retriever import Retriever
-from src.config import MODEL_ID, VECTOR_STORE_PATH, MAX_QA_RETRIES, MIN_FAITHFULNESS_SCORE, MIN_RELEVANCE_SCORE
+from src.config import MODEL_ID, VECTOR_STORE_PATH, MAX_QA_RETRIES, MIN_FAITHFULNESS_SCORE, MIN_RELEVANCE_SCORE, MIN_CONTEXT_RELEVANCE_SCORE
 from src.core.client import client
 from src.evaluation.evaluator import evaluate_answer
 from src.generation import prompts
@@ -51,11 +51,25 @@ class QASystem:
             "Your task is to answer the user's question accurately based ONLY on the provided context. "
             "The context may include raw text, extracted tabular data, global summaries, and images (such as maps or flow diagrams).\n"
             "If the answer cannot be determined from the context, explicitly state that you don't know.\n"
-            "Cite your sources where appropriate (e.g., 'According to Page 304...')."
+            "IMPORTANT CITATION RULES:\n"
+            "1. EVERY citation must be in the format '[Source: Page X]' using ONLY the number from the header of the context chunk.\n"
+            "2. IGNORE any page numbers you see printed within the document text (e.g., footers, headers, or text like 'Page 15'). They are often incorrect or refer to different sub-documents.\n"
+            "3. If you cite a page, and the header says '[Source: Page 20]', you MUST write '[Source: Page 20]' even if the text on that page says 'Page 78'."
         )
         
         prompt = f"RETRIEVED CONTEXT:\n{combined_text_context}\n\nUSER QUESTION: {query}"
         contents = visual_context + [prompt]
+        
+        # --- Context Relevance Fast-Fail ---
+        # Check if the retrieved context is even relevant before wasting generation calls.
+        logger.info("Pre-checking context relevance...")
+        pre_eval = evaluate_answer(query, "", combined_text_context)
+        ctx_score = pre_eval.get("context_relevance_score", 0)
+        ctx_reason = pre_eval.get("context_relevance_reason", "")
+        if ctx_score < MIN_CONTEXT_RELEVANCE_SCORE:
+            logger.warning(f"Context Relevance is 0: {ctx_reason}. Fast-failing to avoid hallucination.")
+            return "I don't have enough information in the knowledge base to answer this question accurately."
+        logger.info(f"Context Relevance check passed (Score: {ctx_score}).")
         
         answer = ""
         for attempt in range(1, MAX_QA_RETRIES + 1):

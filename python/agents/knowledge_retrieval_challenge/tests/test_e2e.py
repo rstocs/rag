@@ -13,7 +13,7 @@ def run_tests():
     retriever = Retriever(store)
     qa = QASystem(retriever)
     
-    all_questions = [
+    questions = [
         "What does the report say about mercury levels?",
         "Which outfall sampling point is closest to the Vertical Integration Tower?",
         "Describe the water cycle---from source to Outfall 001---as detailed in the PDF.",
@@ -38,8 +38,6 @@ def run_tests():
         "¿Cuál es el proceso para que el público comente sobre esta solicitud de permiso?",
         "What are the GPS coordinates of the Starbase facility?"
     ]
-    
-    questions = all_questions[15:]
     
     passed = 0
     total = len(questions)
@@ -102,14 +100,14 @@ def run_tests():
         
         for j, res in enumerate(results_data):
             status_icon = "✅" if res['is_pass'] else "❌"
-            report_lines.append(f"| {j+16} | {status_icon} | {res['f_score']} | {res['r_score']} | {res['c_score']} | {res['question']} |")
+            report_lines.append(f"| {j+1} | {status_icon} | {res['f_score']} | {res['r_score']} | {res['c_score']} | {res['question']} |")
             
         report_lines.append("\n## Detailed Results\n")
         
         for j, res in enumerate(results_data):
             status_icon = "✅ PASSED" if res['is_pass'] else "❌ FAILED"
             report_lines.extend([
-                f"### Question {j+16}: {res['question']}",
+                f"### Question {j+1}: {res['question']}",
                 f"**Status:** {status_icon}\n",
                 f"**Generated Answer:**\n> {res['answer']}\n",
                 "**Metrics:**",
@@ -119,10 +117,10 @@ def run_tests():
                 "\n---\n"
             ])
             
-        with open("test_report_part2.md", "w", encoding="utf-8") as f:
+        with open("test_report.md", "w", encoding="utf-8") as f:
             f.write("\n".join(report_lines))
             
-        print(f"Test report incrementally saved to test_report_part2.md")
+        print(f"Test report incrementally saved to test_report.md")
         
         # Pace API requests to avoid 429 Too Many Requests on free tier
         time.sleep(20)

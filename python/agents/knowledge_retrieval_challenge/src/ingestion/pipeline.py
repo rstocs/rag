@@ -17,6 +17,35 @@ from src.ingestion import extractors
 
 logger = logging.getLogger(__name__)
 
+def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 150) -> List[str]:
+    words = text.split()
+    chunks = []
+    current_chunk = []
+    current_length = 0
+    
+    for word in words:
+        word_len = len(word) + 1 # +1 for space
+        if current_length + word_len > chunk_size and current_chunk:
+            chunks.append(" ".join(current_chunk))
+            overlap_length = 0
+            overlap_words = []
+            for w in reversed(current_chunk):
+                if overlap_length + len(w) + 1 <= overlap:
+                    overlap_words.insert(0, w)
+                    overlap_length += len(w) + 1
+                else:
+                    break
+            current_chunk = overlap_words + [word]
+            current_length = overlap_length + word_len
+        else:
+            current_chunk.append(word)
+            current_length += word_len
+            
+    if current_chunk:
+        chunks.append(" ".join(current_chunk))
+        
+    return chunks if chunks else [text]
+
 async def process_page(img: Image.Image, page_num: int, store: HybridStore, semaphore: asyncio.Semaphore) -> str:
     async with semaphore:
         logger.info(f"Processing Page {page_num}...")
@@ -36,19 +65,20 @@ async def process_page(img: Image.Image, page_num: int, store: HybridStore, sema
             text = await extractors.process_standard_text(img)
             
         if text:
-            # We embed synchronously for now as embedding API might not support aio natively
-            # or it's fast enough. But doing it asynchronously is better if supported.
-            # Using loop.run_in_executor to avoid blocking the event loop
             loop = asyncio.get_event_loop()
-            emb = await loop.run_in_executor(None, embed_text, text)
+            text_chunks = chunk_text(text)
             
-            chunk = Chunk(
-                id=str(uuid.uuid4()),
-                text=text,
-                embedding=emb,
-                metadata={"page": page_num, "category": category}
-            )
-            store.add_chunks([chunk])
+            chunk_objects = []
+            for i, t_chunk in enumerate(text_chunks):
+                emb = await loop.run_in_executor(None, embed_text, t_chunk)
+                chunk_objects.append(Chunk(
+                    id=f"{uuid.uuid4()}_vlm_{i}",
+                    text=t_chunk,
+                    embedding=emb,
+                    metadata={"page": page_num, "category": category}
+                ))
+            
+            store.add_chunks(chunk_objects)
             return text
         return ""
 
@@ -108,14 +138,17 @@ async def async_run_ingestion(pdf_path: str, max_pages: int = 5):
             # Fast Local Extraction: Skip Gemini!
             logger.info(f"Page {page_num} processed locally via PyMuPDF (Length: {len(page_text)})")
             
-            emb = embed_text(page_text)
-            chunk = Chunk(
-                id=str(uuid.uuid4()),
-                text=page_text,
-                embedding=emb,
-                metadata={"page": page_num, "category": "STANDARD_TEXT", "source": "PyMuPDF"}
-            )
-            store.add_chunks([chunk])
+            text_chunks = chunk_text(page_text)
+            chunk_objects = []
+            for i, t_chunk in enumerate(text_chunks):
+                emb = embed_text(t_chunk)
+                chunk_objects.append(Chunk(
+                    id=f"{uuid.uuid4()}_local_{i}",
+                    text=t_chunk,
+                    embedding=emb,
+                    metadata={"page": page_num, "category": "STANDARD_TEXT", "source": "PyMuPDF"}
+                ))
+            store.add_chunks(chunk_objects)
             full_text_parts.append(page_text)
         else:
             # Fallback to Gemini VLM for images/tables/complex forms

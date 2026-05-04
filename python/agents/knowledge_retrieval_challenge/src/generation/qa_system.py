@@ -54,7 +54,10 @@ class QASystem:
             "IMPORTANT CITATION RULES:\n"
             "1. EVERY citation must be in the format '[Source: Page X]' using ONLY the number from the header of the context chunk.\n"
             "2. IGNORE any page numbers you see printed within the document text (e.g., footers, headers, or text like 'Page 15'). They are often incorrect or refer to different sub-documents.\n"
-            "3. If you cite a page, and the header says '[Source: Page 20]', you MUST write '[Source: Page 20]' even if the text on that page says 'Page 78'."
+            "3. If you cite a page, and the header says '[Source: Page 20]', you MUST write '[Source: Page 20]' even if the text on that page says 'Page 78'.\n"
+            "STRICT FACTUAL CONSTRAINTS:\n"
+            "- Affiliation Rule: Do not infer affiliations, corporate relationships, or employment status for individuals unless explicitly stated in the text.\n"
+            "- Data Boundary Rule: When extracting tabular or listed data, strictly adhere to the requested boundaries. Do not conflate, merge, or accidentally include data from adjacent but distinct tables or sections."
         )
         
         prompt = f"RETRIEVED CONTEXT:\n{combined_text_context}\n\nUSER QUESTION: {query}"

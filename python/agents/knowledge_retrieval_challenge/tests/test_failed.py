@@ -13,12 +13,14 @@ def run_failed_tests():
     retriever = Retriever(store)
     qa = QASystem(retriever)
     
-    # The 4 questions that failed across both batches
+    # The 6 questions that failed across the full 17/23 run
     failed_questions = [
         "Describe the water cycle---from source to Outfall 001---as detailed in the PDF.",
-        "Which SpaceX employees listed in the document appear in the chain-of-custody records?",
         "List the Table 1 values for all pollutants at Outfall 001.",
-        "Were any volatile organic compounds (VOCs) detected above their reporting limits at Outfall 001?"
+        "¿Qué contaminantes se esperan en las descargas de la instalación según el resumen en lenguaje sencillo?",
+        "Who signed or appears in the chain-of-custody forms as having relinquished or received the samples?",
+        "What stormwater pollutants were detected at Outfall 001 and how do they compare to their MALs?",
+        "Which single pollutant in the grab samples exceeded its MAL by the greatest factor?"
     ]
     
     iterations = 3

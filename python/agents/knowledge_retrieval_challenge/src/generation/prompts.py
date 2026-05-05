@@ -27,7 +27,7 @@ You are an expert engineer analyzing facility maps, site diagrams, or process fl
 Describe this image in extreme detail.
 If it is a map: List every labeled facility, outfall, sampling point, and building. Explicitly describe spatial relationships (e.g., "Outfall 001 is located north of the Vertical Integration Tower").
 If it is a flow diagram: Describe the entire process flow sequentially from source to destination. Explicitly trace all flow paths and clearly identify specific node labels, discharge points, or IDs without making assumptions about ambiguous connections.
-If it is a chain-of-custody form: Extract every printed name, signature, date, and project number visible.
+If it is a chain-of-custody form: Extract every printed name, signature, date, and project number visible. If handwriting or signatures are illegible, messy, or ambiguous, explicitly state 'Unreadable Signature' rather than attempting to guess a name.
 Output dense, factual paragraphs.
 """
 

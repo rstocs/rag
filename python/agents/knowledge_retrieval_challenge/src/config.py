@@ -11,7 +11,8 @@ logging.basicConfig(
 )
 
 # --- Model Configurations ---
-MODEL_ID = os.getenv("MODEL_ID", "gemini-2.5-flash")
+MODEL_ID = os.getenv("MODEL_ID", "gemini-2.5-pro")
+EVALUATOR_MODEL_ID = os.getenv("EVALUATOR_MODEL_ID", "gemini-2.5-flash")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-004")
 EMBEDDING_DIMENSION = 768
 
@@ -24,7 +25,7 @@ MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "5"))
 RETRY_ATTEMPTS = int(os.getenv("RETRY_ATTEMPTS", "5"))
 
 # --- Retrieval Configurations ---
-TOP_K_RETRIEVAL = int(os.getenv("TOP_K_RETRIEVAL", "7"))
+TOP_K_RETRIEVAL = int(os.getenv("TOP_K_RETRIEVAL", "10"))
 RRF_K = int(os.getenv("RRF_K", "60"))
 
 # --- QA & Evaluation Configurations ---

@@ -1,7 +1,7 @@
 import json
 import logging
 from src.core.client import client
-from src.config import MODEL_ID
+from src.config import EVALUATOR_MODEL_ID
 from src.evaluation.prompts import PROMPT_EVALUATE_ANSWER
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ def evaluate_answer(question: str, answer: str, context: str) -> dict:
     
     try:
         response = client.models.generate_content(
-            model=MODEL_ID,
+            model=EVALUATOR_MODEL_ID,
             contents=prompt
         )
         

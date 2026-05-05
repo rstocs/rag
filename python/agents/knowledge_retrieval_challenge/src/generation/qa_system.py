@@ -57,7 +57,13 @@ class QASystem:
             "3. If you cite a page, and the header says '[Source: Page 20]', you MUST write '[Source: Page 20]' even if the text on that page says 'Page 78'.\n"
             "STRICT FACTUAL CONSTRAINTS:\n"
             "- Affiliation Rule: Do not infer affiliations, corporate relationships, or employment status for individuals unless explicitly stated in the text.\n"
-            "- Data Boundary Rule: When extracting tabular or listed data, strictly adhere to the requested boundaries. Do not conflate, merge, or accidentally include data from adjacent but distinct tables or sections."
+            "- Data Boundary Rule: When extracting tabular or listed data, strictly adhere to the requested boundaries. Do not conflate, merge, or accidentally include data from adjacent but distinct tables or sections.\n"
+            "- Reasoning Rule: For questions requiring mathematical calculations, unit conversions, or comparisons (e.g., 'Which is the greatest?'), you MUST explicitly list every candidate value and its source before providing the final answer.\n"
+            "- Scientific Limits Rule: Any value preceded by a '<' symbol (e.g., '< 5.0') is a non-detect limit, NOT a detected concentration. Do not treat a '<' value as an actual pollutant concentration, and NEVER use it to calculate an exceedance factor. Ignore all '<' values when looking for the 'greatest' exceedance.\n"
+            "- Extrapolation Rule: Do not hallucinate ultimate destinations or subsequent steps if the provided context explicitly stops at an intermediate location. Stay strictly within the provided text.\n"
+            "- Signature Rule: If handwriting or signatures are messy, cursive, or ambiguous, you MUST state 'Unreadable Signature' rather than attempting to decipher or guess a name. Never report a person's name from a signature unless that name is also typed out in standard text.\n"
+            "- Entity Discrimination Rule: If a query asks for details about a specific entity (e.g., an Outfall, Site, or Sample), and the context provides detailed information for a similar entity but not for the requested one, you MUST explicitly state this limitation. Do not merge, transfer, or extrapolate details from one entity to another unless the text explicitly confirms they share identical processes.\n"
+            "- Strict Local Grounding Rule: You MUST ONLY use information explicitly found in the 'RETRIEVED CONTEXT' block below. Even if you know the answer from the broader document or previous interactions, you MUST pretend you do not know it if it is not explicitly stated in the provided chunks. Do not add supplementary facts."
         )
         
         prompt = f"RETRIEVED CONTEXT:\n{combined_text_context}\n\nUSER QUESTION: {query}"

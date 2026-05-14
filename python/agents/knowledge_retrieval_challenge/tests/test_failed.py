@@ -13,13 +13,14 @@ def run_failed_tests():
     retriever = Retriever(store)
     qa = QASystem(retriever)
     
-    # The 5 edge case questions
+    # Retrieval-gap failures targeted by the cross-encoder re-ranker:
+    # Q8  (F=0.33, R=0.33, C=0.33) — lab accreditations not retrieved
+    # Q16 (F=0.33, R=1.00, C=0.33) — 'J' flag definition page not retrieved
+    # Q17 (F=0.33, R=1.00, C=0.67) — VOC table for Outfall 001 not retrieved
     failed_questions = [
-        "Describe the water cycle---from source to Outfall 001---as detailed in the PDF.",
-        "List the Table 1 values for all pollutants at Outfall 001.",
-        "Who signed or appears in the chain-of-custody forms as having relinquished or received the samples?",
-        "What stormwater pollutants were detected at Outfall 001 and how do they compare to their MALs?",
-        "Which single pollutant in the grab samples exceeded its MAL by the greatest factor?"
+        "What laboratory performed the analytical testing and what accreditations does it hold?",
+        "What does the 'J' flag mean in the SPL laboratory reports? What about 'ND'?",
+        "Were any volatile organic compounds (VOCs) detected above their reporting limits at Outfall 001?",
     ]
     
     iterations = 3

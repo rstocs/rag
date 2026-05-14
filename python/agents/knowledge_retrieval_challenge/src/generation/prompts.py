@@ -10,24 +10,61 @@ Specifically look for and explicitly state:
 - Contact names, titles, email addresses, and phone numbers.
 Ensure you connect labels to their values (e.g., "The administrative contact is [Name], whose email is [Email]").
 Do not output raw JSON; output clear, factual sentences.
+
+CRITICAL — TYPED TEXT ONLY:
+Extract ONLY text that is machine-printed, typed, or clearly legible as pre-printed form text.
+If a field contains ONLY a handwritten signature or cursive writing, output the literal string "UNREADABLE SIGNATURE" for that field.
+Do NOT attempt to interpret, phonetically decode, or guess any handwritten name.
+Even if you believe you can read a signature, do not output a name. Output "UNREADABLE SIGNATURE".
 """
 
 PROMPT_TABLE_DATA = """
 You are an expert environmental data analyst reading a pollutant worksheet or laboratory report.
-Extract the tabular data on this page into self-contained, standalone natural language sentences.
-For every row in the table, generate a sentence that includes the column headers. 
-For example: "At Outfall 001, the pollutant Mercury has a concentration of 113 µg/L and a Maximum Analytical Level of 0.2 µg/L."
-CRITICAL INSTRUCTION 1: Scan the page for any footnotes or lab qualifiers (e.g., 'J' flags, 'ND' definitions). 
-If any data row uses a qualifier, you MUST append its definition inline to the sentence for that row.
-CRITICAL INSTRUCTION 2: Translate all mathematical symbols or shorthand (e.g., '<', 'ND') into descriptive, explicit text regarding detection limits so that the data is universally comprehensible. For example, '<1.00' should be written as 'Not Detected above 1.00'.
+
+STEP 1 — IDENTIFY THE TABLE:
+Before extracting any data, scan the page header and identify:
+(a) The table name or number (e.g., "Table A", "Table 99").
+(b) The entity this table belongs to (e.g., "Location No.: X", "Sector 7", "N/A").
+State this identification at the very top of your output: e.g., "The following data is from [TABLE NAME] for [ENTITY]."
+Repeat this entity label at the beginning of EVERY sentence you generate.
+
+STEP 2 — EXTRACT ROWS:
+Extract the tabular data into self-contained, standalone natural language sentences.
+For every row in the table, generate a sentence that includes the column headers.
+Example: "Table 99 — Location X: The pollutant Lead has a sample result of Not Detected above 0.05 mg/L (Reporting Limit)."
+
+STEP 3 — QUALIFIERS AND DEFINITIONS:
+Scan the page for any footnotes, legend boxes, or lab qualifiers (e.g., 'Q' flags, 'TBD' definitions).
+If any qualifier is defined on this page, extract its FULL definition as a standalone sentence.
+Example: "Laboratory Qualifier 'Q': A 'Q' flag indicates an estimated result where the analyte was outside calibration."
+If a data row uses a qualifier, append its meaning inline to that row's sentence.
+
+STEP 4 — TRANSLATE SYMBOLS:
+Translate all mathematical symbols or shorthand into descriptive text:
+'<' → "Not Detected above [value]"
+'ND' → "Not Detected above the Reporting Limit"
+'>' → "Greater than [value]"
 """
 
 PROMPT_VISUAL_DIAGRAM = """
 You are an expert engineer analyzing facility maps, site diagrams, or process flow charts.
-Describe this image in extreme detail.
-If it is a map: List every labeled facility, outfall, sampling point, and building. Explicitly describe spatial relationships (e.g., "Outfall 001 is located north of the Vertical Integration Tower").
-If it is a flow diagram: Describe the entire process flow sequentially from source to destination. Explicitly trace all flow paths and clearly identify specific node labels, discharge points, or IDs without making assumptions about ambiguous connections.
-If it is a chain-of-custody form: Extract every printed name, signature, date, and project number visible. If handwriting or signatures are illegible, messy, or ambiguous, explicitly state 'Unreadable Signature' rather than attempting to guess a name.
+
+If this image is a SITE MAP or FACILITY MAP:
+1. List every labeled structure, outfall, sampling point, building, basin, or feature visible on the map.
+2. SPATIAL RELATIONSHIPS (most important): For each pair of features that are spatially adjacent or notably close, write an explicit sentence describing their relative positions using cardinal directions (north, south, east, west) and approximate proximity. For example:
+   - "Outfall/Sampling Point 1 is located approximately [X distance] to the southwest of the Vertical Integration Tower."
+   - "The Launch Pad is directly north of Starship Test Stand B."
+   - "Retention Basin 1 is southeast of the Power and Control Systems Building."
+3. Identify which outfall or sampling point appears spatially CLOSEST to the Vertical Integration Tower, and state this explicitly.
+
+If this image is a PROCESS FLOW DIAGRAM:
+Describe the entire process flow sequentially from source to destination. Explicitly trace all flow paths and clearly identify specific node labels, discharge points, or IDs without making assumptions about ambiguous connections.
+
+If this image is a CHAIN-OF-CUSTODY FORM:
+Extract every PRINTED (typed) name, date, and project number visible.
+For any signature field that contains only handwritten/cursive content, write "UNREADABLE SIGNATURE".
+Do NOT guess or phonetically decode any handwritten name.
+
 Output dense, factual paragraphs.
 """
 

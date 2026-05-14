@@ -1,8 +1,8 @@
 import json
 import logging
-from src.core.client import client
-from src.config import EVALUATOR_MODEL_ID
+from src.config import EVALUATOR_PROVIDER, EVALUATOR_MODEL_ID
 from src.evaluation.prompts import PROMPT_EVALUATE_ANSWER
+from src.core.llm_gate import generate_content_with_gate
 
 logger = logging.getLogger(__name__)
 
@@ -15,12 +15,12 @@ def evaluate_answer(question: str, answer: str, context: str) -> dict:
     prompt = PROMPT_EVALUATE_ANSWER.format(question=question, context=context, answer=answer)
     
     try:
-        response = client.models.generate_content(
-            model=EVALUATOR_MODEL_ID,
-            contents=prompt
+        text = generate_content_with_gate(
+            provider=EVALUATOR_PROVIDER,
+            model_id=EVALUATOR_MODEL_ID,
+            text_prompt=prompt,
+            temperature=0.0
         )
-        
-        text = response.text.strip()
         if text.startswith("```json"):
             text = text[7:]
         if text.endswith("```"):

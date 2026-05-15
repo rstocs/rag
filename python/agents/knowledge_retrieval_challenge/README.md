@@ -35,7 +35,7 @@ At a high level, this solution uses the **Google GenAI SDK** directly to impleme
 Run the ingestion pipeline on the PDF. For a quick demonstration, you can limit the number of pages processed:
 
 ```bash
-python main.py ingest testing-report.pdf --max-pages 20
+python -m src.main ingest testing-report.pdf --max-pages 20
 ```
 
 This will create a `vector_store` directory containing the FAISS index, metadata chunks, and extracted images.
@@ -44,8 +44,9 @@ This will create a `vector_store` directory containing the FAISS index, metadata
 Ask a question. The system will retrieve the context and generate an answer in near-real time.
 
 ```bash
-python main.py query "What does the report say about mercury levels?"
-python main.py query "Describe the water cycle---from source to Outfall 001"
+python -m src.main query "What does the report say about mercury levels?"
+python -m src.main query "Describe the water cycle---from source to Outfall 001"
+python -m src.main query "Which SpaceX employees listed in the document appear in the chain-of-custody records?"
 ```
 
 ## Edge Cases & Guardrails Handled

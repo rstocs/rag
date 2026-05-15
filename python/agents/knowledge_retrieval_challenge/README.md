@@ -23,10 +23,10 @@ At a high level, this solution uses the **Google GenAI SDK** directly to impleme
     pip install -r requirements.txt
     ```
     *Note: You may need to install `poppler` on your system for `pdf2image` to work (e.g., `brew install poppler` on macOS).*
-3.  Set up your Google API key:
-    Create a `.env` file in this directory with:
-    ```
-    GEMINI_API_KEY=your_api_key_here
+3.  Set up your environment variables:
+    Copy the provided `.env.example` file to `.env` and fill in your API keys:
+    ```bash
+    cp .env.example .env
     ```
 
 ## Usage

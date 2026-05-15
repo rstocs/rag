@@ -122,6 +122,9 @@ async def process_text_page(page_text: str, img: Image.Image, page_num: int, sto
             text = await extractors.process_table_data(img)
         elif category == "ADMIN_FORM":
             text = await extractors.process_admin_form(img)
+        elif category == "VISUAL_DIAGRAM":
+            # The text is just a jumble of map labels. We must use the Vision model to see the spatial relationships!
+            text = await extractors.process_visual_diagram(img)
         else:
             # Skip VLM! Use extremely fast text-to-text formatting.
             text = await extractors.process_standard_text_from_string(page_text)

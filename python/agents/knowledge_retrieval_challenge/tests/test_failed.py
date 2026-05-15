@@ -13,14 +13,18 @@ def run_failed_tests():
     retriever = Retriever(store)
     qa = QASystem(retriever)
     
-    # Retrieval-gap failures targeted by the cross-encoder re-ranker:
-    # Q8  (F=0.33, R=0.33, C=0.33) — lab accreditations not retrieved
-    # Q16 (F=0.33, R=1.00, C=0.33) — 'J' flag definition page not retrieved
-    # Q17 (F=0.33, R=1.00, C=0.67) — VOC table for Outfall 001 not retrieved
+    # Questions that did not score 1.00 in the previous run:
+    # Q2: Context Relevance 0.00
+    # Q10: Context Relevance 0.00
+    # Q12: Context Relevance 0.00 (correct refusal)
+    # Q14: Context Relevance 0.67 (correct answer, math conversion)
+    # Q18: Faithfulness 0.00 (correct answer, flagged for citing synthetic QA)
     failed_questions = [
-        "What laboratory performed the analytical testing and what accreditations does it hold?",
-        "What does the 'J' flag mean in the SPL laboratory reports? What about 'ND'?",
-        "Were any volatile organic compounds (VOCs) detected above their reporting limits at Outfall 001?",
+        "Which outfall sampling point is closest to the Vertical Integration Tower?",
+        "Based on the site map, which outfall sampling point is spatially closest to the Vertical Integration Tower and what other structures are nearby?",
+        "What is SpaceX's current stock price?",
+        "What is the mercury concentration expressed in mg/L rather than µg/L?",
+        "Does the document provide pollutant sample data for Outfall 002 in Table 1 or Table 2?",
     ]
     
     iterations = 3

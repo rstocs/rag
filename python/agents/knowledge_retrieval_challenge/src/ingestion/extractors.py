@@ -31,13 +31,13 @@ async def classify_page(image: Image.Image) -> str:
 @async_retry
 async def classify_text(text: str) -> str:
     """Uses a fast text-only LLM call to classify the page text."""
-    prompt = "Read the following page text. Does it appear to be mostly from a structured data table (TABLE_DATA), a complex fillable form (ADMIN_FORM), or standard paragraphs/instructions/lists (STANDARD_TEXT)? Reply with EXACTLY one of those three category names.\n\n" + text[:2000]
+    prompt = "Read the following page text. Does it appear to be mostly from a structured data table (TABLE_DATA), a complex fillable form (ADMIN_FORM), a list of spatial labels indicating a map/diagram (VISUAL_DIAGRAM), or standard paragraphs/instructions/lists (STANDARD_TEXT)? Reply with EXACTLY one of those four category names.\n\n" + text[:2000]
     response = await client.aio.models.generate_content(
         model=GENERATOR_MODEL_ID,
         contents=[prompt]
     )
     cat = response.text.strip().upper()
-    valid = ["ADMIN_FORM", "TABLE_DATA", "STANDARD_TEXT"]
+    valid = ["ADMIN_FORM", "TABLE_DATA", "VISUAL_DIAGRAM", "STANDARD_TEXT"]
     return cat if cat in valid else "STANDARD_TEXT"
 
 @async_retry
